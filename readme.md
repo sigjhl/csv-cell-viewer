@@ -12,7 +12,7 @@ This is an Electron application for viewing CSV files, built with React and Tail
 1. Clone the repository:
    ```
    git clone https://github.com/sigjhl/csv-cell-viewer/
-   cd csv-viewer-electron
+   cd csv-viewer-viewer
    ```
 
 2. Install dependencies:
