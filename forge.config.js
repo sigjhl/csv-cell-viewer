@@ -29,14 +29,14 @@ module.exports = {
       config: {
         build: [
           {
-            entry: path.resolve(__dirname, 'main.js'),
-            config: 'vite.config.ts',
+            entry: path.join(__dirname, 'electron/main.ts'),
+            config: 'vite.main.config.ts',
           },
         ],
         renderer: [
           {
             name: 'main_window',
-            config: 'vite.config.ts',
+            config: 'vite.renderer.config.ts',
           },
         ],
       },

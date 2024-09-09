@@ -8,18 +8,15 @@ export default defineConfig({
   },
   build: {
     ssr: true,
-    outDir: '.vite/build',
+    outDir: 'dist-electron',
     lib: {
-      entry: path.resolve(__dirname, 'src/main.ts'),
+      entry: path.join(__dirname, 'electron/main.ts'),
       formats: ['cjs'],
-      fileName: () => 'main.js',
+      fileName: () => '[name].js',
     },
     rollupOptions: {
       external: ['electron'],
-      output: {
-        entryFileNames: '[name].js',
-      },
     },
-    emptyOutDir: false,
+    emptyOutDir: true,
   },
 });

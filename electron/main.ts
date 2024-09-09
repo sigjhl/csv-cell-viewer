@@ -11,9 +11,8 @@ function createWindow() {
     },
   });
 
-  if (process.env.NODE_ENV === 'development') {
-    const url = 'http://localhost:3000'; // Assuming Vite dev server runs on port 3000
-    win.loadURL(url);
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    win.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
     win.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
