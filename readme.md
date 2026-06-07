@@ -26,7 +26,8 @@ It's a single `index.html` with **no build step and no dependencies**.
 - **Delimiter** — auto-detect, or pick comma / tab / semicolon / pipe.
 - **Faithful parsing** — RFC 4180 quoting, escaped `""`, multi-line cells, CRLF.
   The source cell is shown **exactly** as stored.
-- **Trim view** — optional whitespace trim for readability (display-only; never alters data).
+- **Trim view** — optional readability cleanup that removes blank / whitespace-only lines
+  inside a cell plus the surrounding whitespace (display-only; never alters data).
 - **Sentence breaks** — optional display-only toggle that inserts a line break after each
   sentence, while skipping decimals (`3.14`), abbreviations (`Dr.`, `e.g.`), acronyms
   (`U.S.`) and bare numbers/years.

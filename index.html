@@ -30,28 +30,28 @@
     --focus: #f59e0b;
   }
   :root[data-theme="dark"] {
-    --bg: #0b1220;
-    --panel: #111827;
-    --field: #0b1324;
-    --field-disabled: #0e1730;
-    --border: #334155;
-    --text: #e5e7eb;
-    --muted: #94a3b8;
-    --accent: #3b82f6;
-    --accent-fg: #ffffff;
-    --btn-bg: #1b2536;
-    --btn-hover: #273449;
-    --chip-bg: #24304f;
-    --chip-fg: #c7d2fe;
-    --editbadge-bg: #3a2c0a;
-    --editbadge-fg: #fcd34d;
-    --kbd-bg: #0e1730;
-    --drag-bg: #13294d;
-    --split: #1f2a3d;
-    --split-hover: #3b4a61;
-    --grip: #475569;
-    --warn: #fbbf24;
-    --focus: #f59e0b;
+    --bg: #16161e;
+    --panel: #1a1b26;
+    --field: #1f2335;
+    --field-disabled: #191c2b;
+    --border: #2c3047;
+    --text: #c0caf5;
+    --muted: #7e88b8;
+    --accent: #7aa2f7;
+    --accent-fg: #0b0e16;
+    --btn-bg: #232539;
+    --btn-hover: #2d3048;
+    --chip-bg: #283052;
+    --chip-fg: #bb9af7;
+    --editbadge-bg: #3a2f14;
+    --editbadge-fg: #e0af68;
+    --kbd-bg: #1f2335;
+    --drag-bg: #20294a;
+    --split: #1f2233;
+    --split-hover: #2d3450;
+    --grip: #414868;
+    --warn: #e0af68;
+    --focus: #e0af68;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -208,7 +208,7 @@
     </div>
     <div class="group">
       <label class="chk"><input type="checkbox" id="headerChk" checked> Header</label>
-      <label class="chk" title="Display only — never alters the data"><input type="checkbox" id="trimChk" checked> Trim view</label>
+      <label class="chk" title="Display only — remove blank lines inside the cell and surrounding whitespace"><input type="checkbox" id="trimChk" checked> Trim view</label>
       <label class="chk" title="Display only — inserts a line break after sentence ends (ignores decimals, e.g., Dr., U.S., etc.)"><input type="checkbox" id="sentChk"> Sentence breaks</label>
     </div>
     <div class="group">
@@ -505,9 +505,20 @@ function cellValue(r, c) {
 }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(v, hi)); }
 
+// Trim view: remove blank / whitespace-only lines inside the cell and trim
+// the surrounding whitespace (content lines and their indentation are kept).
+function trimText(s) {
+  return s
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\s+$/, ""))
+    .filter((l) => l.trim().length > 0)
+    .join("\n")
+    .trim();
+}
+
 // Source text after the display-only transforms (never mutates data).
 function viewerText(raw) {
-  let t = state.trim ? raw.trim() : raw;
+  let t = state.trim ? trimText(raw) : raw;
   if (state.sentenceBreaks) t = sentenceWrap(t);
   return t;
 }
