@@ -873,6 +873,10 @@ function flashCast(cap, text, meta) {
   requestAnimationFrame(() => chip.classList.add("show"));
   setTimeout(() => { chip.classList.remove("show"); setTimeout(() => chip.remove(), 200); }, 750);
 }
+function flashNav(glyph) {
+  if (!state.rows.length) return;
+  flashCast(glyph, colLetter(state.cur.c) + (state.cur.r + 1), null);
+}
 function maybeReload(fn) {
   if (state.dirty && !confirm("Re-reading the file will discard unsaved edits. Continue?")) return false;
   fn(); return true;
@@ -975,7 +979,8 @@ els.addPreset.addEventListener("click", () => {
 
 document.querySelectorAll("[data-nav]").forEach((btn) => {
   const map = { left: [0, -1], right: [0, 1], up: [-1, 0], down: [1, 0] };
-  btn.addEventListener("click", () => { const d = map[btn.dataset.nav]; move(d[0], d[1]); els.stage.focus(); });
+  const glyph = { left: "←", right: "→", up: "↑", down: "↓" };
+  btn.addEventListener("click", () => { const d = map[btn.dataset.nav]; move(d[0], d[1]); flashNav(glyph[btn.dataset.nav]); els.stage.focus(); });
 });
 
 els.editor.addEventListener("focus", () => { if (!els.editor.disabled && state.mode !== "edit") { state.mode = "edit"; render(); } });
@@ -1022,10 +1027,10 @@ window.addEventListener("keydown", (e) => {
   if (mod && (e.key === "c" || e.key === "C")) { e.preventDefault(); copyCell(); return; }
 
   switch (e.key) {
-    case "ArrowUp":    e.preventDefault(); move(-1, 0); break;
-    case "ArrowDown":  e.preventDefault(); move(1, 0); break;
-    case "ArrowLeft":  e.preventDefault(); move(0, -1); break;
-    case "ArrowRight": e.preventDefault(); move(0, 1); break;
+    case "ArrowUp":    e.preventDefault(); move(-1, 0); flashNav("↑"); break;
+    case "ArrowDown":  e.preventDefault(); move(1, 0); flashNav("↓"); break;
+    case "ArrowLeft":  e.preventDefault(); move(0, -1); flashNav("←"); break;
+    case "ArrowRight": e.preventDefault(); move(0, 1); flashNav("→"); break;
     case "Home":       e.preventDefault(); mod ? setCell(firstDataRow(), 0) : setCell(state.cur.r, 0); break;
     case "End":        e.preventDefault(); mod ? setCell(state.rows.length - 1, state.nCols - 1) : setCell(state.cur.r, state.nCols - 1); break;
     case "PageUp":     e.preventDefault(); move(-10, 0); break;

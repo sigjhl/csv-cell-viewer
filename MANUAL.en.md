@@ -139,10 +139,11 @@ newline.** Commit with:
 
 Comments are saved as you type.
 
-**Confirmation flashes.** Because auto-advance moves on immediately, a brief chip appears in the
-lower-left after each label or committed comment — showing the key (or ✎), the value, and the
-column · row it landed on — so you can confirm it registered without slowing down. Turn it off
-with **Show key flashes** in the side panel.
+**Confirmation flashes.** A brief chip appears in the lower-left for each action — quick labels
+(key + value + column · row), committed comments (✎ + text), and arrow-key navigation (the arrow +
+the cell you moved to) — then fades. Because auto-advance moves on immediately, this lets you
+confirm a label registered without slowing down. Turn it off with **Show key flashes** in the
+side panel.
 
 **Immutability.** Only the chosen annotation column is ever written. Every other column —
 including the long multi-line cell you're reading — is guaranteed unchanged. (If you pick an
