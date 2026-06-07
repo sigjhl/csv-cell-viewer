@@ -225,7 +225,6 @@
     </div>
     <span class="spacer"></span>
     <div class="group">
-      <button class="btn icon" id="panelToggle" title="Hide panel">⟩</button>
       <button class="btn icon" id="themeBtn" title="Toggle dark / light">☾</button>
     </div>
   </div>
@@ -360,7 +359,7 @@ const els = {
   headerChk: $("headerChk"), trimChk: $("trimChk"), sentChk: $("sentChk"),
   fontMinus: $("fontMinus"), fontPlus: $("fontPlus"), fontLabel: $("fontLabel"),
   copyBtn: $("copyBtn"), downloadBtn: $("downloadBtn"), saveBtn: $("saveBtn"), bomChk: $("bomChk"),
-  panelToggle: $("panelToggle"), themeBtn: $("themeBtn"),
+  themeBtn: $("themeBtn"),
   main: $("main"), stage: $("stage"), addrCell: $("addrCell"), modeBadge: $("modeBadge"), addrMeta: $("addrMeta"),
   editzone: $("editzone"), viewer: $("viewer"), hsplit: $("hsplit"),
   editor: $("editor"), stampbar: $("stampbar"), annotLabel: $("annotLabel"),
@@ -791,13 +790,11 @@ function applyPanel() {
     els.panel.style.display = "none";
     els.vsplit.style.display = "none";
     els.panelShow.hidden = false;
-    els.panelToggle.textContent = "⟨"; els.panelToggle.title = "Show panel";
   } else {
     els.panel.style.display = "";
     els.panel.style.width = state.panelWidth + "px";
     els.vsplit.style.display = "";
     els.panelShow.hidden = true;
-    els.panelToggle.textContent = "⟩"; els.panelToggle.title = "Hide panel";
   }
   applySrcHeight();
 }
@@ -905,7 +902,6 @@ els.themeBtn.addEventListener("click", () => {
   state.theme = eff === "dark" ? "light" : "dark";
   savePrefs(); applyTheme();
 });
-els.panelToggle.addEventListener("click", () => togglePanel());
 els.foldBtn.addEventListener("click", () => togglePanel(true));
 els.panelShow.addEventListener("click", () => togglePanel(false));
 
