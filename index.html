@@ -1,12 +1,1072 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CSV Viewer</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV Cell Viewer</title>
+<style>
+  :root {
+    --bg: #f3f4f6;
+    --panel: #ffffff;
+    --field: #ffffff;
+    --field-disabled: #f9fafb;
+    --border: #d1d5db;
+    --text: #111827;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-fg: #ffffff;
+    --btn-bg: #ffffff;
+    --btn-hover: #f3f4f6;
+    --chip-bg: #eef2ff;
+    --chip-fg: #3730a3;
+    --editbadge-bg: #fef3c7;
+    --editbadge-fg: #92400e;
+    --kbd-bg: #f3f4f6;
+    --drag-bg: #eff6ff;
+    --split: #e5e7eb;
+    --split-hover: #cbd5e1;
+    --grip: #cbd5e1;
+    --warn: #b45309;
+    --focus: #f59e0b;
+  }
+  :root[data-theme="dark"] {
+    --bg: #16161e;
+    --panel: #1a1b26;
+    --field: #1f2335;
+    --field-disabled: #191c2b;
+    --border: #2c3047;
+    --text: #c0caf5;
+    --muted: #7e88b8;
+    --accent: #7aa2f7;
+    --accent-fg: #0b0e16;
+    --btn-bg: #232539;
+    --btn-hover: #2d3048;
+    --chip-bg: #283052;
+    --chip-fg: #bb9af7;
+    --editbadge-bg: #3a2f14;
+    --editbadge-fg: #e0af68;
+    --kbd-bg: #1f2335;
+    --drag-bg: #20294a;
+    --split: #1f2233;
+    --split-hover: #2d3450;
+    --grip: #414868;
+    --warn: #e0af68;
+    --focus: #e0af68;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans KR", "Malgun Gothic", sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--border);
+  }
+  .toolbar .group { display: flex; align-items: center; gap: 6px; padding-right: 8px; border-right: 1px solid var(--border); }
+  .toolbar .group:last-child { border-right: none; }
+  .toolbar .spacer { flex: 1; }
+  .title { font-weight: 700; font-size: 15px; margin-right: 4px; white-space: nowrap; }
+  .filename { font-size: 13px; color: var(--muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dot { color: var(--warn); font-weight: 700; }
+
+  label.chk { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text); white-space: nowrap; }
+  select, .btn, input[type="number"] {
+    font: inherit; font-size: 13px; padding: 4px 8px;
+    border: 1px solid var(--border); border-radius: 6px; color: var(--text);
+  }
+  select { background: var(--field); }
+  .btn { background: var(--btn-bg); cursor: pointer; }
+  .btn:hover { background: var(--btn-hover); }
+  .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  .btn.primary:hover { filter: brightness(1.05); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.icon { width: 34px; height: 30px; padding: 0; font-size: 15px; line-height: 1; }
+  .lbl { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+  /* Main layout */
+  .main { flex: 1; display: flex; min-height: 0; position: relative; }
+  .stage { flex: 1; display: flex; flex-direction: column; min-width: 0; padding: 12px; gap: 10px; outline: none; }
+  .stage:focus-visible { box-shadow: inset 0 0 0 2px rgba(37,99,235,0.35); border-radius: 8px; }
+
+  .address { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .addr-cell { font-weight: 700; font-size: 16px; }
+  .badge { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 999px; }
+  .badge.nav { background: var(--chip-bg); color: var(--chip-fg); }
+  .badge.edit { background: var(--editbadge-bg); color: var(--editbadge-fg); }
+  .addr-meta { color: var(--muted); font-size: 13px; }
+
+  /* Edit zone: source box + splitter + annotation box */
+  .editzone { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+  /* Source cell viewer — always read-only, fidelity preserved */
+  #viewer {
+    flex: 0 0 auto; height: 55%; min-height: 60px;
+    padding: 14px 16px; border: 2px solid var(--border); border-radius: 8px;
+    background: var(--field); color: var(--text); line-height: 1.5; overflow: auto;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  #viewer.empty { color: var(--muted); display: flex; align-items: center; justify-content: center; text-align: center; }
+  body.drag #viewer { border-color: var(--accent); background: var(--drag-bg); }
+
+  /* Horizontal splitter between source and annotation */
+  .hsplit { flex: 0 0 auto; height: 12px; display: flex; align-items: center; justify-content: center; cursor: row-resize; }
+  .hsplit span { width: 46px; height: 4px; border-radius: 2px; background: var(--grip); }
+  .hsplit:hover span { background: var(--accent); }
+
+  /* Annotation block — the only editable surface */
+  .annot { flex: 1 1 0; min-height: 90px; display: flex; flex-direction: column; gap: 6px; }
+  .annot-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .annot-label { font-weight: 700; font-size: 13px; }
+  .annot-label .col { color: var(--accent); }
+  .annot-hint { font-size: 12px; color: var(--muted); }
+
+  .stampbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .stampbar .hint { font-size: 12px; color: var(--muted); }
+  .stamp {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--btn-bg);
+    color: var(--text); cursor: pointer; font-size: 13px;
+  }
+  .stamp:hover { border-color: var(--accent); }
+  .stamp:disabled { opacity: 0.5; cursor: not-allowed; }
+  .stamp .key { font-size: 11px; font-weight: 700; background: var(--chip-bg); color: var(--chip-fg); border-radius: 4px; padding: 1px 5px; }
+
+  .annot-editor {
+    flex: 1 1 auto; min-height: 50px; width: 100%; resize: none;
+    padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px;
+    font-family: inherit; line-height: 1.4; background: var(--field); color: var(--text); outline: none;
+  }
+  .annot-editor:focus { border-color: var(--focus); }
+  .annot-editor:disabled { background: var(--field-disabled); color: var(--muted); }
+
+  /* Nav controls */
+  .navrow { display: flex; align-items: center; gap: 8px; }
+  .navbtn { width: 40px; height: 34px; font-size: 16px; line-height: 1; }
+  .pos { font-size: 13px; color: var(--muted); margin-left: 6px; }
+
+  /* Vertical splitter between stage and panel */
+  .vsplit { flex: 0 0 auto; width: 8px; cursor: col-resize; background: var(--split); display: flex; align-items: center; justify-content: center; }
+  .vsplit span { width: 4px; height: 46px; border-radius: 2px; background: var(--grip); }
+  .vsplit:hover { background: var(--split-hover); }
+
+  /* Side panel */
+  .panel { width: 290px; flex-shrink: 0; background: var(--panel); padding: 14px; overflow: auto; }
+  .panel-fold { display: flex; justify-content: flex-end; margin: -4px -4px 8px 0; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 0 0 8px; }
+  .panel .section { margin-bottom: 20px; }
+  .panel select { width: 100%; }
+  .preset-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .preset-row .key { font-size: 11px; font-weight: 700; background: var(--chip-bg); color: var(--chip-fg); border-radius: 4px; padding: 2px 6px; min-width: 20px; text-align: center; }
+  .preset-row input { flex: 1; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--field); color: var(--text); }
+  .preset-row .rm { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; }
+  .preset-row .rm:hover { color: #dc2626; }
+
+  /* Floating "show panel" tab when folded */
+  .panel-show {
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    border: 1px solid var(--border); border-right: none; border-radius: 6px 0 0 6px;
+    background: var(--panel); color: var(--text); cursor: pointer; padding: 10px 4px; font-size: 13px;
+  }
+  .panel-show:hover { background: var(--btn-hover); }
+
+  /* Status bar */
+  .statusbar { border-top: 1px solid var(--border); background: var(--panel); padding: 6px 12px; font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; }
+  .statusbar kbd { font: inherit; font-size: 11px; background: var(--kbd-bg); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
+  .status-msg { color: var(--text); }
+
+  /* Key-cast HUD — brief confirmation of the label/comment that just landed */
+  .keycast { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; z-index: 50; }
+  .kc-chip {
+    display: inline-flex; align-items: center; gap: 9px; max-width: 60vw;
+    padding: 8px 12px; border-radius: 10px;
+    background: rgba(20,22,30,0.92); color: #f4f5f7;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    font-size: 15px; font-weight: 600; white-space: nowrap;
+    opacity: 0; transform: translateY(10px) scale(0.97);
+    transition: opacity 0.14s ease, transform 0.14s ease;
+  }
+  .kc-chip.show { opacity: 1; transform: translateY(0) scale(1); }
+  .kc-chip .cap { font-size: 12px; font-weight: 800; background: var(--accent); color: var(--accent-fg); border-radius: 6px; padding: 2px 8px; min-width: 18px; text-align: center; }
+  .kc-chip .txt { overflow: hidden; text-overflow: ellipsis; }
+  .kc-chip .meta { font-size: 12px; font-weight: 500; color: rgba(244,245,247,0.6); }
+</style>
 </head>
 <body>
-    <div id="root"></div>
-    <script type="module" src="/src/index.tsx"></script>
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span class="title">CSV Cell Viewer</span>
+    <div class="group">
+      <button class="btn primary" id="openBtn">Open CSV…</button>
+      <span class="filename" id="filename">no file</span>
+    </div>
+    <div class="group">
+      <span class="lbl">Encoding</span>
+      <select id="encoding" title="Text encoding">
+        <option value="auto">Auto</option>
+        <option value="utf-8">UTF-8</option>
+        <option value="euc-kr">EUC-KR / CP949 (Korean)</option>
+      </select>
+      <span class="lbl">Delimiter</span>
+      <select id="delimiter" title="Field delimiter">
+        <option value="auto">Auto</option>
+        <option value="comma">Comma ,</option>
+        <option value="tab">Tab</option>
+        <option value="semicolon">Semicolon ;</option>
+        <option value="pipe">Pipe |</option>
+      </select>
+    </div>
+    <div class="group">
+      <label class="chk"><input type="checkbox" id="headerChk" checked> Header</label>
+      <label class="chk" title="Display only — remove blank lines inside the cell and surrounding whitespace"><input type="checkbox" id="trimChk" checked> Trim view</label>
+      <label class="chk" title="Display only — inserts a line break after sentence ends (ignores decimals, e.g., Dr., U.S., etc.)"><input type="checkbox" id="sentChk"> Sentence breaks</label>
+    </div>
+    <div class="group">
+      <span class="lbl">Font</span>
+      <button class="btn" id="fontMinus">−</button>
+      <span class="lbl" id="fontLabel">16px</span>
+      <button class="btn" id="fontPlus">+</button>
+    </div>
+    <div class="group">
+      <button class="btn" id="copyBtn" title="Copy source cell (Ctrl+C)">Copy cell</button>
+      <button class="btn" id="downloadBtn" title="Download a copy">Download</button>
+      <button class="btn primary" id="saveBtn" title="Save to file (Ctrl+S)">Save</button>
+      <label class="chk" title="Prepend a UTF-8 BOM so Excel detects the encoding"><input type="checkbox" id="bomChk" checked> BOM</label>
+    </div>
+    <span class="spacer"></span>
+    <div class="group">
+      <button class="btn icon" id="themeBtn" title="Toggle dark / light">☾</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main" id="main">
+    <div class="stage" id="stage" tabindex="0">
+      <div class="address">
+        <span class="addr-cell" id="addrCell">—</span>
+        <span class="badge nav" id="modeBadge">NAV</span>
+        <span class="addr-meta" id="addrMeta"></span>
+      </div>
+
+      <div class="editzone" id="editzone">
+        <!-- Source cell (read-only) -->
+        <div id="viewer" class="empty">Open a CSV file, or drag &amp; drop one here.</div>
+
+        <!-- Drag to resize the two boxes -->
+        <div class="hsplit" id="hsplit" title="Drag to resize"><span></span></div>
+
+        <!-- Annotation (editable) -->
+        <div class="annot">
+          <div class="annot-head">
+            <span class="annot-label" id="annotLabel">Annotation</span>
+            <span class="annot-hint">labels &amp; free text go here — the source cell above is never modified</span>
+          </div>
+          <div class="stampbar" id="stampbar"></div>
+          <textarea id="editor" class="annot-editor" spellcheck="false"
+                    placeholder="Select an annotation column on the right →" disabled></textarea>
+        </div>
+      </div>
+
+      <div class="navrow">
+        <button class="btn navbtn" data-nav="left"  title="Left (←)">◀</button>
+        <button class="btn navbtn" data-nav="up"    title="Up (↑)">▲</button>
+        <button class="btn navbtn" data-nav="down"  title="Down (↓)">▼</button>
+        <button class="btn navbtn" data-nav="right" title="Right (→)">▶</button>
+        <span class="pos" id="pos"></span>
+      </div>
+    </div>
+
+    <!-- Vertical splitter -->
+    <div class="vsplit" id="vsplit" title="Drag to resize panel"><span></span></div>
+
+    <!-- Labeling panel -->
+    <div class="panel" id="panel">
+      <div class="panel-fold"><button class="btn icon" id="foldBtn" title="Hide panel">⟩</button></div>
+      <div class="section">
+        <h2>Annotation column</h2>
+        <select id="targetCol"><option value="">— none —</option></select>
+        <p class="lbl" style="margin:6px 0 0">Labels and comments are written here for the current row. Source columns stay immutable.</p>
+      </div>
+
+      <div class="section">
+        <h2>Quick-insert labels</h2>
+        <div id="presetEditor"></div>
+        <button class="btn" id="addPreset" style="margin-top:6px">+ Add label</button>
+      </div>
+
+      <div class="section">
+        <h2>Behaviour</h2>
+        <label class="chk" style="display:flex"><input type="checkbox" id="advanceChk" checked> Advance to next row after labeling</label>
+        <label class="chk" style="display:flex; margin-top:6px"><input type="checkbox" id="flashChk" checked> Show key flashes</label>
+      </div>
+    </div>
+
+    <!-- Floating tab to reopen a folded panel -->
+    <button class="panel-show" id="panelShow" title="Show panel" hidden>⟨</button>
+  </div>
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span class="status-msg" id="status">Ready.</span>
+    <span>
+      <kbd>←↑↓→</kbd> move ·
+      <kbd>1</kbd>–<kbd>9</kbd> label ·
+      <kbd>Enter</kbd> comment ·
+      <kbd>Ctrl+Enter</kbd> done+next ·
+      <kbd>Esc</kbd> done ·
+      <kbd>Ctrl+S</kbd> save
+    </span>
+  </div>
+
+  <div class="keycast" id="keycast" aria-live="polite"></div>
+
+  <input type="file" id="fileInput" accept=".csv,text/csv,text/plain" style="display:none">
+
+<script>
+"use strict";
+
+/* ---------------------------------------------------------------------------
+   State
+--------------------------------------------------------------------------- */
+const state = {
+  rows: [],            // string[][] — full grid, header included as row 0 when hasHeader
+  nCols: 0,
+  cur: { r: 0, c: 0 }, // currently viewed SOURCE cell
+  mode: "nav",         // "nav" | "edit" (edit == annotation editor focused)
+  rawBuffer: null,
+  rawText: "",
+  fileName: "",
+  fileHandle: null,
+  dirty: false,
+  _detected: "",
+  // preferences (persisted)
+  fontSize: 16,
+  hasHeader: true,
+  trim: true,
+  sentenceBreaks: false,
+  encoding: "auto",
+  delimiter: "auto",
+  bom: true,
+  autoAdvance: true,
+  keyFlash: true,
+  presets: ["Yes", "No", "?"],
+  theme: null,         // null = follow OS; "light" | "dark" = explicit
+  panelWidth: 290,
+  panelFolded: false,
+  srcRatio: 0.55,      // source box height as a fraction of the edit zone
+};
+
+let targetCol = null; // selected annotation column index, or null
+
+const PREFS_KEY = "csvcell.prefs";
+const PREF_KEYS = ["fontSize","hasHeader","trim","sentenceBreaks","encoding","delimiter",
+                   "bom","autoAdvance","keyFlash","presets","theme","panelWidth","panelFolded","srcRatio"];
+const DELIM_MAP = { comma: ",", tab: "\t", semicolon: ";", pipe: "|" };
+
+/* ---------------------------------------------------------------------------
+   Elements
+--------------------------------------------------------------------------- */
+const $ = (id) => document.getElementById(id);
+const els = {
+  openBtn: $("openBtn"), fileInput: $("fileInput"), filename: $("filename"),
+  encoding: $("encoding"), delimiter: $("delimiter"),
+  headerChk: $("headerChk"), trimChk: $("trimChk"), sentChk: $("sentChk"),
+  fontMinus: $("fontMinus"), fontPlus: $("fontPlus"), fontLabel: $("fontLabel"),
+  copyBtn: $("copyBtn"), downloadBtn: $("downloadBtn"), saveBtn: $("saveBtn"), bomChk: $("bomChk"),
+  themeBtn: $("themeBtn"),
+  main: $("main"), stage: $("stage"), addrCell: $("addrCell"), modeBadge: $("modeBadge"), addrMeta: $("addrMeta"),
+  editzone: $("editzone"), viewer: $("viewer"), hsplit: $("hsplit"),
+  editor: $("editor"), stampbar: $("stampbar"), annotLabel: $("annotLabel"),
+  pos: $("pos"), vsplit: $("vsplit"), panel: $("panel"), foldBtn: $("foldBtn"), panelShow: $("panelShow"),
+  targetCol: $("targetCol"), presetEditor: $("presetEditor"), addPreset: $("addPreset"),
+  advanceChk: $("advanceChk"), flashChk: $("flashChk"), status: $("status"), keycast: $("keycast"),
+};
+
+/* ---------------------------------------------------------------------------
+   Preferences persistence
+--------------------------------------------------------------------------- */
+function loadPrefs() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
+    for (const k of PREF_KEYS) if (p[k] !== undefined) state[k] = p[k];
+    if (!Array.isArray(state.presets) || state.presets.length === 0) state.presets = ["Yes","No","?"];
+    state.presets = state.presets.slice(0, 9);
+  } catch (_) {}
+}
+function savePrefs() {
+  const p = {};
+  for (const k of PREF_KEYS) p[k] = state[k];
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch (_) {}
+}
+
+/* ---------------------------------------------------------------------------
+   Encoding & parsing
+--------------------------------------------------------------------------- */
+function decodeBuffer(buf, enc) {
+  const b = new Uint8Array(buf);
+  if (b[0] === 0xEF && b[1] === 0xBB && b[2] === 0xBF) {
+    return { text: new TextDecoder("utf-8").decode(buf), enc: "utf-8" };
+  }
+  if (enc === "utf-8") return { text: new TextDecoder("utf-8").decode(buf), enc: "utf-8" };
+  if (enc === "euc-kr") return { text: new TextDecoder("euc-kr").decode(buf), enc: "euc-kr" };
+  try {
+    return { text: new TextDecoder("utf-8", { fatal: true }).decode(buf), enc: "utf-8" };
+  } catch (_) {
+    try { return { text: new TextDecoder("euc-kr").decode(buf), enc: "euc-kr" }; }
+    catch (__) { return { text: new TextDecoder("utf-8").decode(buf), enc: "utf-8" }; }
+  }
+}
+
+function sniffDelimiter(text) {
+  const nl = text.indexOf("\n");
+  const firstLine = nl >= 0 ? text.slice(0, nl) : text;
+  let best = ",", bestCount = -1;
+  for (const d of [",", "\t", ";", "|"]) {
+    const count = firstLine.split(d).length - 1;
+    if (count > bestCount) { bestCount = count; best = d; }
+  }
+  return best;
+}
+
+function resolvedDelimiter() {
+  return state.delimiter === "auto" ? sniffDelimiter(state.rawText) : DELIM_MAP[state.delimiter];
+}
+
+// RFC 4180-ish parser: quoted fields, escaped "", multi-line (LF/CRLF/CR) inside quotes.
+function parseCSV(text, delim) {
+  const rows = [];
+  let row = [], field = "", inQ = false, i = 0;
+  const n = text.length;
+  while (i < n) {
+    const ch = text[i];
+    if (inQ) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+        inQ = false; i++; continue;
+      }
+      if (ch === "\r") { field += "\n"; if (text[i + 1] === "\n") i++; i++; continue; }
+      field += ch; i++; continue;
+    }
+    if (ch === '"') { inQ = true; i++; continue; }
+    if (ch === delim) { row.push(field); field = ""; i++; continue; }
+    if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); field = ""; rows.push(row); row = []; i++; continue;
+    }
+    field += ch; i++;
+  }
+  row.push(field); rows.push(row);
+  const last = rows[rows.length - 1];
+  if (rows.length > 1 && last.length === 1 && last[0] === "") rows.pop();
+  return rows;
+}
+
+function toCSV(rows, delim) {
+  const needsQuote = (s) =>
+    s.indexOf(delim) >= 0 || s.indexOf('"') >= 0 || s.indexOf("\n") >= 0 || s.indexOf("\r") >= 0;
+  return rows.map((r) =>
+    r.map((f) => {
+      f = f == null ? "" : String(f);
+      return needsQuote(f) ? '"' + f.replace(/"/g, '""') + '"' : f;
+    }).join(delim)
+  ).join("\r\n");
+}
+
+// Display-only: insert a line break after sentence-ending punctuation, while
+// ignoring decimals, abbreviations, dotted acronyms, initials and bare numbers.
+const SENT_ABBR = new Set(["mr","mrs","ms","dr","prof","sr","jr","st","vs","etc","eg","ie","fig",
+  "no","vol","pp","p","al","inc","ltd","co","dept","univ","approx","cf","ca","rev","gen","sen","col","gov","pres"]);
+function sentenceWrap(text) {
+  return text.replace(
+    /([.?!…])(["'”’)\]]*)([ \t]+)(?=[A-Z0-9"'“‘(\[가-힣぀-ヿ㐀-鿿])/g,
+    (m, punct, close, ws, off, str) => {
+      if (punct === ".") {
+        const word = (str.slice(0, off).match(/\S+$/) || [""])[0];
+        const token = word.replace(/[.?!…"'”’)\]]+$/, "").toLowerCase();
+        if (SENT_ABBR.has(token)) return m;          // known abbreviation
+        if (/^[a-z]$/.test(token)) return m;         // single-letter initial
+        if (/^\d+$/.test(token)) return m;           // ordinal / list / year
+        if (/[a-z]\.[a-z]/i.test(word)) return m;    // dotted acronym (U.S., e.g.) — not decimals
+      }
+      return punct + close + "\n";
+    }
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   Grid helpers
+--------------------------------------------------------------------------- */
+function computeCols() {
+  let max = 0;
+  for (const r of state.rows) if (r.length > max) max = r.length;
+  state.nCols = max;
+}
+function firstDataRow() { return state.hasHeader && state.rows.length > 1 ? 1 : 0; }
+function colLetter(c) {
+  let name = "", i = c;
+  while (i >= 0) { name = String.fromCharCode(65 + (i % 26)) + name; i = Math.floor(i / 26) - 1; }
+  return name;
+}
+function colName(c) {
+  if (state.hasHeader && state.rows[0] && state.rows[0][c] != null && state.rows[0][c] !== "")
+    return state.rows[0][c];
+  return "Column " + colLetter(c);
+}
+function cellValue(r, c) {
+  const row = state.rows[r];
+  return row && row[c] != null ? row[c] : "";
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(v, hi)); }
+
+// Trim view: remove blank / whitespace-only lines inside the cell and trim
+// the surrounding whitespace (content lines and their indentation are kept).
+function trimText(s) {
+  return s
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\s+$/, ""))
+    .filter((l) => l.trim().length > 0)
+    .join("\n")
+    .trim();
+}
+
+// Source text after the display-only transforms (never mutates data).
+function viewerText(raw) {
+  let t = state.trim ? trimText(raw) : raw;
+  if (state.sentenceBreaks) t = sentenceWrap(t);
+  return t;
+}
+
+/* ---------------------------------------------------------------------------
+   Loading
+--------------------------------------------------------------------------- */
+async function handleFile(file, handle) {
+  try {
+    state.rawBuffer = await file.arrayBuffer();
+    state.fileName = file.name || "data.csv";
+    state.fileHandle = handle || null;
+    decodeAndParse();
+    setStatus(`Loaded ${state.fileName} (${state._detected})`);
+  } catch (err) {
+    setStatus("Could not read file: " + err.message, true);
+  }
+}
+
+function decodeAndParse() {
+  const { text, enc } = decodeBuffer(state.rawBuffer, state.encoding);
+  state.rawText = text;
+  const delim = resolvedDelimiter();
+  state._detected = `${enc}, "${delim === "\t" ? "\\t" : delim}"`;
+  reparse(delim);
+}
+
+function reparse(delim) {
+  delim = delim || resolvedDelimiter();
+  state.rows = parseCSV(state.rawText, delim);
+  computeCols();
+  state.cur = { r: firstDataRow(), c: 0 };
+  state.mode = "nav";
+  state.dirty = false;
+  if (targetCol != null && targetCol >= state.nCols) targetCol = null;
+  refreshColumns();
+  render();
+}
+
+/* ---------------------------------------------------------------------------
+   Navigation
+--------------------------------------------------------------------------- */
+function setCell(r, c) {
+  if (!state.rows.length) return;
+  state.cur.r = clamp(r, 0, state.rows.length - 1);
+  state.cur.c = clamp(c, 0, Math.max(0, state.nCols - 1));
+  render();
+}
+function move(dr, dc) { setCell(state.cur.r + dr, state.cur.c + dc); }
+
+/* ---------------------------------------------------------------------------
+   Annotation (the only writable surface) — target column of the current row
+--------------------------------------------------------------------------- */
+function canAnnotate() {
+  return targetCol != null && state.rows.length > 0 && !(state.hasHeader && state.cur.r === 0);
+}
+function writeTarget(value) {
+  const r = state.cur.r;
+  while (state.rows[r].length <= targetCol) state.rows[r].push("");
+  if (state.rows[r][targetCol] !== value) { state.rows[r][targetCol] = value; state.dirty = true; }
+}
+function focusAnnotation() {
+  if (!canAnnotate()) { setStatus("Pick an annotation column first.", true); return; }
+  state.mode = "edit";
+  render();
+  els.editor.focus();
+  const len = els.editor.value.length;
+  els.editor.setSelectionRange(len, len);
+}
+function leaveAnnotation(advance) {
+  if (state.mode !== "edit") return;
+  const fromR = state.cur.r;
+  state.mode = "nav";
+  els.stage.focus();
+  const moved = advance && state.autoAdvance && fromR < state.rows.length - 1;
+  if (moved) {
+    const val = cellValue(fromR, targetCol);
+    if (val.trim()) flashCast("✎", clip(val), `${colName(targetCol)} · row ${state.hasHeader ? fromR : fromR + 1}`);
+    state.cur.r = fromR + 1;
+  }
+  render();
+}
+function onAnnotationInput() {
+  if (!canAnnotate()) return;
+  writeTarget(els.editor.value);
+  if (state.cur.c === targetCol) els.viewer.textContent = viewerText(els.editor.value);
+  updateFilenameBadge();
+}
+function applyPreset(idx) {
+  const label = state.presets[idx];
+  if (label == null) return;
+  if (!state.rows.length) return;
+  if (targetCol == null) { setStatus("Pick an annotation column first.", true); return; }
+  if (state.hasHeader && state.cur.r === 0) { setStatus("On the header row — move down first.", true); return; }
+  const r = state.cur.r;
+  writeTarget(label);
+  setStatus(`Set ${colName(targetCol)} = "${label}"`);
+  flashCast(String(idx + 1), clip(label) || "(empty)", `${colName(targetCol)} · row ${state.hasHeader ? r : r + 1}`);
+  if (state.autoAdvance && r < state.rows.length - 1) state.cur.r = r + 1;
+  render();
+}
+
+/* ---------------------------------------------------------------------------
+   Rendering
+--------------------------------------------------------------------------- */
+function render() {
+  const has = state.rows.length > 0;
+  const editing = state.mode === "edit";
+  const fs = state.fontSize + "px";
+
+  els.modeBadge.textContent = editing ? "EDIT" : "NAV";
+  els.modeBadge.className = "badge " + (editing ? "edit" : "nav");
+
+  if (has) {
+    const { r, c } = state.cur;
+    els.addrCell.textContent = colLetter(c) + (r + 1);
+    const dataRows = state.hasHeader ? Math.max(0, state.rows.length - 1) : state.rows.length;
+    const dataIdx = state.hasHeader ? r : r + 1;
+    const where = (state.hasHeader && r === 0) ? "(header row)" : `row ${dataIdx} / ${dataRows}`;
+    els.addrMeta.textContent = `${colName(c)} · ${where}, col ${c + 1} / ${state.nCols}`;
+    els.pos.textContent = `${state.rows.length} records × ${state.nCols} cols`;
+  } else {
+    els.addrCell.textContent = "—"; els.addrMeta.textContent = ""; els.pos.textContent = "";
+  }
+
+  els.viewer.style.fontSize = fs;
+  if (has) {
+    els.viewer.classList.remove("empty");
+    els.viewer.textContent = viewerText(cellValue(state.cur.r, state.cur.c));
+  } else {
+    els.viewer.classList.add("empty");
+    els.viewer.textContent = "Open a CSV file, or drag & drop one here.";
+  }
+
+  const allow = canAnnotate();
+  els.editor.disabled = !allow;
+  els.editor.style.fontSize = fs;
+  els.editor.placeholder = targetCol == null
+    ? "Select an annotation column on the right →"
+    : (state.hasHeader && state.cur.r === 0 ? "Header row — move down to annotate"
+                                            : `Type a comment… (written to ${colName(targetCol)})`);
+  if (document.activeElement !== els.editor) {
+    els.editor.value = allow ? cellValue(state.cur.r, targetCol) : "";
+  }
+  els.annotLabel.innerHTML = targetCol == null
+    ? "Annotation"
+    : 'Annotation → <span class="col">' + escapeHtml(colName(targetCol)) + "</span>";
+
+  updateFilenameBadge();
+  renderStampbar();
+  els.saveBtn.disabled = els.downloadBtn.disabled = els.copyBtn.disabled = !has;
+}
+
+function updateFilenameBadge() {
+  const has = state.rows.length > 0;
+  els.filename.innerHTML = has
+    ? (state.dirty ? '<span class="dot">●</span> ' : "") + escapeHtml(state.fileName)
+    : "no file";
+}
+
+function renderStampbar() {
+  els.stampbar.innerHTML = "";
+  if (!state.presets.length) return;
+  const allow = canAnnotate();
+  const hint = document.createElement("span");
+  hint.className = "hint";
+  hint.textContent = targetCol == null ? "Quick labels → choose an annotation column:" : "Quick labels:";
+  els.stampbar.appendChild(hint);
+  state.presets.forEach((label, i) => {
+    const b = document.createElement("button");
+    b.className = "stamp"; b.disabled = !allow;
+    b.innerHTML = `<span class="key">${i + 1}</span>${escapeHtml(label || "(empty)")}`;
+    b.title = `Insert "${label}" (key ${i + 1})`;
+    b.addEventListener("click", () => { applyPreset(i); els.stage.focus(); });
+    els.stampbar.appendChild(b);
+  });
+}
+
+function refreshColumns() {
+  const sel = els.targetCol;
+  sel.innerHTML = "";
+  sel.appendChild(new Option("— none —", ""));
+  for (let c = 0; c < state.nCols; c++) sel.appendChild(new Option(colName(c), String(c)));
+  sel.appendChild(new Option("➕ Add new column…", "__add__"));
+  sel.value = targetCol == null ? "" : String(targetCol);
+}
+
+function renderPresetEditor() {
+  els.presetEditor.innerHTML = "";
+  state.presets.forEach((label, i) => {
+    const row = document.createElement("div");
+    row.className = "preset-row";
+    const key = document.createElement("span");
+    key.className = "key"; key.textContent = String(i + 1);
+    const input = document.createElement("input");
+    input.type = "text"; input.value = label; input.placeholder = "label…";
+    input.addEventListener("input", () => { state.presets[i] = input.value; savePrefs(); renderStampbar(); });
+    const rm = document.createElement("button");
+    rm.className = "rm"; rm.textContent = "×"; rm.title = "Remove";
+    rm.addEventListener("click", () => { state.presets.splice(i, 1); savePrefs(); renderPresetEditor(); renderStampbar(); });
+    row.append(key, input, rm);
+    els.presetEditor.appendChild(row);
+  });
+  els.addPreset.disabled = state.presets.length >= 9;
+}
+
+/* ---------------------------------------------------------------------------
+   Save / export
+--------------------------------------------------------------------------- */
+function buildBytes() {
+  const text = toCSV(state.rows, resolvedDelimiter());
+  const body = new TextEncoder().encode(text);
+  if (!state.bom) return body;
+  const out = new Uint8Array(body.length + 3);
+  out.set([0xEF, 0xBB, 0xBF], 0); out.set(body, 3);
+  return out;
+}
+function download() {
+  const blob = new Blob([buildBytes()], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = state.fileName || "export.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  setStatus("Downloaded a copy.");
+}
+async function save() {
+  if (window.showSaveFilePicker) {
+    try {
+      let handle = state.fileHandle;
+      if (handle && handle.requestPermission) {
+        const perm = await handle.requestPermission({ mode: "readwrite" });
+        if (perm !== "granted") handle = null;
+      }
+      if (!handle) {
+        handle = await window.showSaveFilePicker({
+          suggestedName: state.fileName || "export.csv",
+          types: [{ description: "CSV", accept: { "text/csv": [".csv"] } }],
+        });
+        state.fileHandle = handle; state.fileName = handle.name || state.fileName;
+      }
+      const w = await handle.createWritable();
+      await w.write(buildBytes()); await w.close();
+      state.dirty = false; render(); setStatus(`Saved to ${state.fileName}.`);
+      return;
+    } catch (err) {
+      if (err && err.name === "AbortError") { setStatus("Save cancelled."); return; }
+      setStatus("In-place save unavailable, downloading instead.", true);
+    }
+  }
+  download(); state.dirty = false; render();
+}
+async function copyCell() {
+  if (!state.rows.length) return;
+  try { await navigator.clipboard.writeText(cellValue(state.cur.r, state.cur.c)); setStatus("Source cell copied."); }
+  catch (_) { setStatus("Clipboard blocked by browser.", true); }
+}
+
+/* ---------------------------------------------------------------------------
+   Layout: theme, splitters, panel fold
+--------------------------------------------------------------------------- */
+function systemTheme() {
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+function applyTheme() {
+  const eff = state.theme || systemTheme();
+  document.documentElement.dataset.theme = eff;
+  els.themeBtn.textContent = eff === "dark" ? "☀" : "☾";
+  els.themeBtn.title = eff === "dark" ? "Switch to light" : "Switch to dark";
+}
+function applySrcHeight() {
+  const h = els.editzone.clientHeight;
+  if (h <= 0) return;
+  const min = 60, max = Math.max(min, h - 150);
+  els.viewer.style.height = clamp(state.srcRatio * h, min, max) + "px";
+}
+function applyPanel() {
+  if (state.panelFolded) {
+    els.panel.style.display = "none";
+    els.vsplit.style.display = "none";
+    els.panelShow.hidden = false;
+  } else {
+    els.panel.style.display = "";
+    els.panel.style.width = state.panelWidth + "px";
+    els.vsplit.style.display = "";
+    els.panelShow.hidden = true;
+  }
+  applySrcHeight();
+}
+function togglePanel(force) {
+  state.panelFolded = force === undefined ? !state.panelFolded : force;
+  savePrefs(); applyPanel();
+}
+
+// Generic pointer-drag helper for the splitters.
+function makeDrag(handle, onMove) {
+  handle.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    const move = (ev) => onMove(ev);
+    const up = (ev) => {
+      handle.releasePointerCapture(e.pointerId);
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      savePrefs();
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+  });
+}
+
+/* ---------------------------------------------------------------------------
+   Helpers
+--------------------------------------------------------------------------- */
+function setStatus(msg, warn) {
+  els.status.textContent = msg;
+  els.status.style.color = warn ? "var(--warn)" : "var(--text)";
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+function clip(s) { s = String(s).replace(/\s+/g, " ").trim(); return s.length > 28 ? s.slice(0, 27) + "…" : s; }
+
+// KeyCastr-style transient chip confirming what just landed (and where).
+function flashCast(cap, text, meta) {
+  if (!state.keyFlash) return;
+  const chip = document.createElement("div");
+  chip.className = "kc-chip";
+  chip.innerHTML = (cap ? `<span class="cap">${escapeHtml(cap)}</span>` : "") +
+    `<span class="txt">${escapeHtml(text)}</span>` +
+    (meta ? `<span class="meta">${escapeHtml(meta)}</span>` : "");
+  els.keycast.appendChild(chip);
+  while (els.keycast.children.length > 5) els.keycast.removeChild(els.keycast.firstChild);
+  requestAnimationFrame(() => chip.classList.add("show"));
+  setTimeout(() => { chip.classList.remove("show"); setTimeout(() => chip.remove(), 200); }, 750);
+}
+function flashNav(glyph) {
+  if (!state.rows.length) return;
+  flashCast(glyph, colLetter(state.cur.c) + (state.cur.r + 1), null);
+}
+function maybeReload(fn) {
+  if (state.dirty && !confirm("Re-reading the file will discard unsaved edits. Continue?")) return false;
+  fn(); return true;
+}
+
+/* ---------------------------------------------------------------------------
+   Events: opening files
+--------------------------------------------------------------------------- */
+els.openBtn.addEventListener("click", async () => {
+  if (window.showOpenFilePicker) {
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: "CSV / text", accept: { "text/csv": [".csv"], "text/plain": [".txt", ".tsv"] } }],
+      });
+      handleFile(await handle.getFile(), handle);
+      return;
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+    }
+  }
+  els.fileInput.click();
+});
+els.fileInput.addEventListener("change", (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (file) handleFile(file, null);
+  e.target.value = "";
+});
+document.addEventListener("dragover", (e) => { e.preventDefault(); document.body.classList.add("drag"); });
+document.addEventListener("dragleave", (e) => { if (e.target === document.documentElement) document.body.classList.remove("drag"); });
+document.addEventListener("drop", async (e) => {
+  e.preventDefault(); document.body.classList.remove("drag");
+  const item = e.dataTransfer.items && e.dataTransfer.items[0];
+  if (item && item.getAsFileSystemHandle) {
+    try {
+      const handle = await item.getAsFileSystemHandle();
+      if (handle && handle.kind === "file") { handleFile(await handle.getFile(), handle); return; }
+    } catch (_) {}
+  }
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (file) handleFile(file, null);
+});
+
+/* ---------------------------------------------------------------------------
+   Events: toolbar controls
+--------------------------------------------------------------------------- */
+els.encoding.addEventListener("change", () => {
+  state.encoding = els.encoding.value; savePrefs();
+  if (state.rawBuffer) maybeReload(decodeAndParse);
+});
+els.delimiter.addEventListener("change", () => {
+  state.delimiter = els.delimiter.value; savePrefs();
+  if (state.rawText) maybeReload(() => reparse());
+});
+els.headerChk.addEventListener("change", () => { state.hasHeader = els.headerChk.checked; savePrefs(); refreshColumns(); render(); });
+els.trimChk.addEventListener("change", () => { state.trim = els.trimChk.checked; savePrefs(); render(); });
+els.sentChk.addEventListener("change", () => { state.sentenceBreaks = els.sentChk.checked; savePrefs(); render(); });
+els.bomChk.addEventListener("change", () => { state.bom = els.bomChk.checked; savePrefs(); });
+
+function setFont(px) { state.fontSize = clamp(px, 8, 48); els.fontLabel.textContent = state.fontSize + "px"; savePrefs(); render(); }
+els.fontMinus.addEventListener("click", () => setFont(state.fontSize - 2));
+els.fontPlus.addEventListener("click", () => setFont(state.fontSize + 2));
+
+els.copyBtn.addEventListener("click", copyCell);
+els.downloadBtn.addEventListener("click", download);
+els.saveBtn.addEventListener("click", save);
+els.advanceChk.addEventListener("change", () => { state.autoAdvance = els.advanceChk.checked; savePrefs(); });
+els.flashChk.addEventListener("change", () => { state.keyFlash = els.flashChk.checked; savePrefs(); });
+
+els.themeBtn.addEventListener("click", () => {
+  const eff = state.theme || systemTheme();
+  state.theme = eff === "dark" ? "light" : "dark";
+  savePrefs(); applyTheme();
+});
+els.foldBtn.addEventListener("click", () => togglePanel(true));
+els.panelShow.addEventListener("click", () => togglePanel(false));
+
+els.targetCol.addEventListener("change", () => {
+  const v = els.targetCol.value;
+  if (v === "__add__") {
+    const name = (prompt("New annotation column name:", "comment") || "").trim();
+    const idx = state.nCols;
+    state.rows.forEach((r, ri) => {
+      while (r.length < idx) r.push("");
+      r[idx] = (state.hasHeader && ri === 0) ? (name || "comment") : "";
+    });
+    state.nCols = idx + 1; targetCol = idx; state.dirty = true;
+    refreshColumns(); render();
+    setStatus(`Added annotation column "${state.hasHeader ? (name || "comment") : colLetter(idx)}".`);
+  } else {
+    targetCol = v === "" ? null : parseInt(v, 10);
+    render();
+  }
+  els.stage.focus();
+});
+
+els.addPreset.addEventListener("click", () => {
+  if (state.presets.length >= 9) return;
+  state.presets.push(""); savePrefs(); renderPresetEditor(); renderStampbar();
+});
+
+document.querySelectorAll("[data-nav]").forEach((btn) => {
+  const map = { left: [0, -1], right: [0, 1], up: [-1, 0], down: [1, 0] };
+  const glyph = { left: "←", right: "→", up: "↑", down: "↓" };
+  btn.addEventListener("click", () => { const d = map[btn.dataset.nav]; move(d[0], d[1]); flashNav(glyph[btn.dataset.nav]); els.stage.focus(); });
+});
+
+els.editor.addEventListener("focus", () => { if (!els.editor.disabled && state.mode !== "edit") { state.mode = "edit"; render(); } });
+els.editor.addEventListener("input", onAnnotationInput);
+els.editor.addEventListener("blur", () => { if (state.mode === "edit") { state.mode = "nav"; render(); } });
+els.stage.addEventListener("mousedown", (e) => { if (e.target === els.stage) els.stage.focus(); });
+
+/* ---------------------------------------------------------------------------
+   Events: splitters & responsive layout
+--------------------------------------------------------------------------- */
+makeDrag(els.hsplit, (e) => {
+  const top = els.editzone.getBoundingClientRect().top;
+  const h = els.editzone.clientHeight;
+  state.srcRatio = clamp((e.clientY - top) / h, 0.1, 0.9);
+  applySrcHeight();
+});
+makeDrag(els.vsplit, (e) => {
+  const right = els.main.getBoundingClientRect().right;
+  state.panelWidth = clamp(right - e.clientX, 180, 560);
+  els.panel.style.width = state.panelWidth + "px";
+});
+if (window.ResizeObserver) new ResizeObserver(applySrcHeight).observe(els.editzone);
+if (window.matchMedia) {
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!state.theme) applyTheme(); });
+}
+
+/* ---------------------------------------------------------------------------
+   Keyboard (modal)
+--------------------------------------------------------------------------- */
+window.addEventListener("keydown", (e) => {
+  const t = e.target;
+  const mod = e.ctrlKey || e.metaKey;
+
+  if (state.mode === "edit" && t === els.editor) {
+    if (e.key === "Escape") { e.preventDefault(); leaveAnnotation(false); }
+    else if (e.key === "Enter" && mod) { e.preventDefault(); leaveAnnotation(true); }
+    else if (e.key === "Tab") { e.preventDefault(); leaveAnnotation(false); move(0, e.shiftKey ? -1 : 1); }
+    return;
+  }
+  if (["INPUT", "SELECT", "BUTTON", "TEXTAREA"].includes(t.tagName)) return;
+
+  if (mod && (e.key === "s" || e.key === "S")) { e.preventDefault(); save(); return; }
+  if (!state.rows.length) return;
+  if (mod && (e.key === "c" || e.key === "C")) { e.preventDefault(); copyCell(); return; }
+
+  switch (e.key) {
+    case "ArrowUp":    e.preventDefault(); move(-1, 0); flashNav("↑"); break;
+    case "ArrowDown":  e.preventDefault(); move(1, 0); flashNav("↓"); break;
+    case "ArrowLeft":  e.preventDefault(); move(0, -1); flashNav("←"); break;
+    case "ArrowRight": e.preventDefault(); move(0, 1); flashNav("→"); break;
+    case "Home":       e.preventDefault(); mod ? setCell(firstDataRow(), 0) : setCell(state.cur.r, 0); break;
+    case "End":        e.preventDefault(); mod ? setCell(state.rows.length - 1, state.nCols - 1) : setCell(state.cur.r, state.nCols - 1); break;
+    case "PageUp":     e.preventDefault(); move(-10, 0); break;
+    case "PageDown":   e.preventDefault(); move(10, 0); break;
+    case "Enter":
+    case "F2":         e.preventDefault(); focusAnnotation(); break;
+    default:
+      if (e.key >= "1" && e.key <= "9") { e.preventDefault(); applyPreset(parseInt(e.key, 10) - 1); }
+  }
+});
+
+window.addEventListener("beforeunload", (e) => { if (state.dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ---------------------------------------------------------------------------
+   Init
+--------------------------------------------------------------------------- */
+function init() {
+  loadPrefs();
+  applyTheme();
+  els.encoding.value = state.encoding;
+  els.delimiter.value = state.delimiter;
+  els.headerChk.checked = state.hasHeader;
+  els.trimChk.checked = state.trim;
+  els.sentChk.checked = state.sentenceBreaks;
+  els.bomChk.checked = state.bom;
+  els.advanceChk.checked = state.autoAdvance;
+  els.flashChk.checked = state.keyFlash;
+  els.fontLabel.textContent = state.fontSize + "px";
+  els.panel.style.width = state.panelWidth + "px";
+  renderPresetEditor();
+  applyPanel();
+  render();
+  requestAnimationFrame(applySrcHeight);
+  els.stage.focus();
+}
+init();
+</script>
 </body>
 </html>
