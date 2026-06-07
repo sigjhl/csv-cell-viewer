@@ -315,10 +315,10 @@
   <div class="statusbar">
     <span class="status-msg" id="status">Ready.</span>
     <span>
-      <kbd>←↑↓→</kbd> move ·
+      <kbd>←↑↓→</kbd>/<kbd>Tab</kbd> move ·
       <kbd>1</kbd>–<kbd>9</kbd> label ·
       <kbd>Enter</kbd> comment ·
-      <kbd>Ctrl+Enter</kbd> done+next ·
+      <kbd>Shift+Enter</kbd> done+next ·
       <kbd>Esc</kbd> done ·
       <kbd>Ctrl+S</kbd> save
     </span>
@@ -575,6 +575,7 @@ function reparse(delim) {
   if (targetCol != null && targetCol >= state.nCols) targetCol = null;
   refreshColumns();
   render();
+  els.stage.focus();
 }
 
 /* ---------------------------------------------------------------------------
@@ -1016,8 +1017,8 @@ window.addEventListener("keydown", (e) => {
 
   if (state.mode === "edit" && t === els.editor) {
     if (e.key === "Escape") { e.preventDefault(); leaveAnnotation(false); }
-    else if (e.key === "Enter" && mod) { e.preventDefault(); leaveAnnotation(true); }
-    else if (e.key === "Tab") { e.preventDefault(); leaveAnnotation(false); move(0, e.shiftKey ? -1 : 1); }
+    else if (e.key === "Enter" && (mod || e.shiftKey)) { e.preventDefault(); leaveAnnotation(true); }
+    else if (e.key === "Tab") { e.preventDefault(); leaveAnnotation(false); move(0, e.shiftKey ? -1 : 1); flashNav(e.shiftKey ? "←" : "→"); }
     return;
   }
   if (["INPUT", "SELECT", "BUTTON", "TEXTAREA"].includes(t.tagName)) return;
@@ -1031,6 +1032,7 @@ window.addEventListener("keydown", (e) => {
     case "ArrowDown":  e.preventDefault(); move(1, 0); flashNav("↓"); break;
     case "ArrowLeft":  e.preventDefault(); move(0, -1); flashNav("←"); break;
     case "ArrowRight": e.preventDefault(); move(0, 1); flashNav("→"); break;
+    case "Tab":        e.preventDefault(); move(0, e.shiftKey ? -1 : 1); flashNav(e.shiftKey ? "←" : "→"); break;
     case "Home":       e.preventDefault(); mod ? setCell(firstDataRow(), 0) : setCell(state.cur.r, 0); break;
     case "End":        e.preventDefault(); mod ? setCell(state.rows.length - 1, state.nCols - 1) : setCell(state.cur.r, state.nCols - 1); break;
     case "PageUp":     e.preventDefault(); move(-10, 0); break;

@@ -133,8 +133,8 @@ to the next row so you can label rapidly.
 for the current row; the badge shows `EDIT`. Because cells can be multi-line, **`Enter` inserts a
 newline.** Commit with:
 
-- `Ctrl/⌘ + Enter` — commit and advance to the next row;
-- `Esc` — commit and return to navigation;
+- `Shift + Enter` (or `Ctrl/⌘ + Enter`) — commit and advance to the next row;
+- `Esc` — commit and stay (return to navigation on the same row);
 - `Tab` / `Shift + Tab` — commit and move to the next / previous cell.
 
 Comments are saved as you type.
@@ -196,14 +196,15 @@ machine.
 | Context | Keys | Action |
 |---|---|---|
 | Navigate | `←↑↓→` | Move one cell |
+| Navigate | `Tab` / `Shift + Tab` | Move to next / previous cell |
 | Navigate | `Home` / `End` | First / last column |
 | Navigate | `Ctrl/⌘ + Home` / `End` | First / last row |
 | Navigate | `PageUp` / `PageDown` | Jump 10 rows |
 | Navigate | `1`–`9` | Insert preset label into the annotation column |
 | Navigate | `Enter` / `F2` | Edit a comment for the current row |
-| Edit | `Ctrl/⌘ + Enter` | Commit comment, advance to next row |
-| Edit | `Esc` | Commit comment, stop editing |
-| Edit | `Tab` / `Shift + Tab` | Commit, move right / left |
+| Edit | `Shift + Enter` (or `Ctrl/⌘ + Enter`) | Commit comment, advance to next row |
+| Edit | `Esc` | Commit comment, stop editing (stay) |
+| Edit | `Tab` / `Shift + Tab` | Commit, move to next / previous cell |
 | Global | `Ctrl/⌘ + S` | Save |
 | Global | `Ctrl/⌘ + C` | Copy source cell |
 
