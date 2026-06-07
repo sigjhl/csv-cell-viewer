@@ -182,7 +182,7 @@
   .status-msg { color: var(--text); }
 
   /* Key-cast HUD — brief confirmation of the label/comment that just landed */
-  .keycast { position: fixed; left: 16px; bottom: 40px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; pointer-events: none; z-index: 50; }
+  .keycast { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; z-index: 50; }
   .kc-chip {
     display: inline-flex; align-items: center; gap: 9px; max-width: 60vw;
     padding: 8px 12px; border-radius: 10px;

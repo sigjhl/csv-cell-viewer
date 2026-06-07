@@ -139,7 +139,7 @@ newline.** Commit with:
 
 Comments are saved as you type.
 
-**Confirmation flashes.** A brief chip appears in the lower-left for each action — quick labels
+**Confirmation flashes.** A brief chip appears at the bottom center for each action — quick labels
 (key + value + column · row), committed comments (✎ + text), and arrow-key navigation (the arrow +
 the cell you moved to) — then fades. Because auto-advance moves on immediately, this lets you
 confirm a label registered without slowing down. Turn it off with **Show key flashes** in the
