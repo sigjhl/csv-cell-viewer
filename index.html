@@ -8,13 +8,50 @@
   :root {
     --bg: #f3f4f6;
     --panel: #ffffff;
+    --field: #ffffff;
+    --field-disabled: #f9fafb;
     --border: #d1d5db;
     --text: #111827;
     --muted: #6b7280;
     --accent: #2563eb;
     --accent-fg: #ffffff;
+    --btn-bg: #ffffff;
+    --btn-hover: #f3f4f6;
+    --chip-bg: #eef2ff;
+    --chip-fg: #3730a3;
+    --editbadge-bg: #fef3c7;
+    --editbadge-fg: #92400e;
+    --kbd-bg: #f3f4f6;
+    --drag-bg: #eff6ff;
+    --split: #e5e7eb;
+    --split-hover: #cbd5e1;
+    --grip: #cbd5e1;
     --warn: #b45309;
-    --edit: #f59e0b;
+    --focus: #f59e0b;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1220;
+    --panel: #111827;
+    --field: #0b1324;
+    --field-disabled: #0e1730;
+    --border: #334155;
+    --text: #e5e7eb;
+    --muted: #94a3b8;
+    --accent: #3b82f6;
+    --accent-fg: #ffffff;
+    --btn-bg: #1b2536;
+    --btn-hover: #273449;
+    --chip-bg: #24304f;
+    --chip-fg: #c7d2fe;
+    --editbadge-bg: #3a2c0a;
+    --editbadge-fg: #fcd34d;
+    --kbd-bg: #0e1730;
+    --drag-bg: #13294d;
+    --split: #1f2a3d;
+    --split-hover: #3b4a61;
+    --grip: #475569;
+    --warn: #fbbf24;
+    --focus: #f59e0b;
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; }
@@ -29,83 +66,62 @@
 
   /* Toolbar */
   .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--border);
   }
-  .toolbar .group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding-right: 8px;
-    border-right: 1px solid var(--border);
-  }
+  .toolbar .group { display: flex; align-items: center; gap: 6px; padding-right: 8px; border-right: 1px solid var(--border); }
   .toolbar .group:last-child { border-right: none; }
+  .toolbar .spacer { flex: 1; }
   .title { font-weight: 700; font-size: 15px; margin-right: 4px; white-space: nowrap; }
   .filename { font-size: 13px; color: var(--muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dot { color: var(--warn); font-weight: 700; }
 
   label.chk { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--text); white-space: nowrap; }
   select, .btn, input[type="number"] {
-    font: inherit;
-    font-size: 13px;
-    padding: 4px 8px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: #fff;
-    color: var(--text);
+    font: inherit; font-size: 13px; padding: 4px 8px;
+    border: 1px solid var(--border); border-radius: 6px; color: var(--text);
   }
-  .btn { cursor: pointer; }
-  .btn:hover { background: #f9fafb; }
+  select { background: var(--field); }
+  .btn { background: var(--btn-bg); cursor: pointer; }
+  .btn:hover { background: var(--btn-hover); }
   .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
   .btn.primary:hover { filter: brightness(1.05); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.icon { width: 34px; height: 30px; padding: 0; font-size: 15px; line-height: 1; }
   .lbl { font-size: 12px; color: var(--muted); white-space: nowrap; }
 
   /* Main layout */
-  .main { flex: 1; display: flex; min-height: 0; }
-  .stage {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    padding: 12px;
-    gap: 10px;
-    outline: none;
-  }
+  .main { flex: 1; display: flex; min-height: 0; position: relative; }
+  .stage { flex: 1; display: flex; flex-direction: column; min-width: 0; padding: 12px; gap: 10px; outline: none; }
   .stage:focus-visible { box-shadow: inset 0 0 0 2px rgba(37,99,235,0.35); border-radius: 8px; }
 
   .address { display: flex; align-items: center; gap: 10px; font-size: 14px; }
   .addr-cell { font-weight: 700; font-size: 16px; }
   .badge { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 999px; }
-  .badge.nav { background: #e0e7ff; color: #3730a3; }
-  .badge.edit { background: #fef3c7; color: #92400e; }
+  .badge.nav { background: var(--chip-bg); color: var(--chip-fg); }
+  .badge.edit { background: var(--editbadge-bg); color: var(--editbadge-fg); }
   .addr-meta { color: var(--muted); font-size: 13px; }
 
+  /* Edit zone: source box + splitter + annotation box */
+  .editzone { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
   /* Source cell viewer — always read-only, fidelity preserved */
-  .cell-wrap { flex: 1; min-height: 90px; position: relative; }
   #viewer {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    padding: 14px 16px;
-    border: 2px solid var(--border);
-    border-radius: 8px;
-    background: #fff;
-    line-height: 1.5;
-    overflow: auto;
-    white-space: pre-wrap;
-    word-break: break-word;
-    color: var(--text);
+    flex: 0 0 auto; height: 55%; min-height: 60px;
+    padding: 14px 16px; border: 2px solid var(--border); border-radius: 8px;
+    background: var(--field); color: var(--text); line-height: 1.5; overflow: auto;
+    white-space: pre-wrap; word-break: break-word;
   }
   #viewer.empty { color: var(--muted); display: flex; align-items: center; justify-content: center; text-align: center; }
-  body.drag #viewer { border-color: var(--accent); background: #eff6ff; }
+  body.drag #viewer { border-color: var(--accent); background: var(--drag-bg); }
+
+  /* Horizontal splitter between source and annotation */
+  .hsplit { flex: 0 0 auto; height: 12px; display: flex; align-items: center; justify-content: center; cursor: row-resize; }
+  .hsplit span { width: 46px; height: 4px; border-radius: 2px; background: var(--grip); }
+  .hsplit:hover span { background: var(--accent); }
 
   /* Annotation block — the only editable surface */
-  .annot { display: flex; flex-direction: column; gap: 6px; }
+  .annot { flex: 1 1 0; min-height: 90px; display: flex; flex-direction: column; gap: 6px; }
   .annot-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
   .annot-label { font-weight: 700; font-size: 13px; }
   .annot-label .col { color: var(--accent); }
@@ -114,44 +130,55 @@
   .stampbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
   .stampbar .hint { font-size: 12px; color: var(--muted); }
   .stamp {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px;
-    background: #fff; cursor: pointer; font-size: 13px;
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--btn-bg);
+    color: var(--text); cursor: pointer; font-size: 13px;
   }
   .stamp:hover { border-color: var(--accent); }
   .stamp:disabled { opacity: 0.5; cursor: not-allowed; }
-  .stamp .key { font-size: 11px; font-weight: 700; background: #eef2ff; color: #3730a3; border-radius: 4px; padding: 1px 5px; }
+  .stamp .key { font-size: 11px; font-weight: 700; background: var(--chip-bg); color: var(--chip-fg); border-radius: 4px; padding: 1px 5px; }
 
   .annot-editor {
-    width: 100%; height: 120px; resize: vertical;
-    padding: 10px 12px;
-    border: 2px solid var(--border); border-radius: 8px;
-    font-family: inherit; line-height: 1.4;
-    background: #fff; color: var(--text);
-    outline: none;
+    flex: 1 1 auto; min-height: 50px; width: 100%; resize: none;
+    padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px;
+    font-family: inherit; line-height: 1.4; background: var(--field); color: var(--text); outline: none;
   }
-  .annot-editor:focus { border-color: var(--edit); }
-  .annot-editor:disabled { background: #f9fafb; color: var(--muted); }
+  .annot-editor:focus { border-color: var(--focus); }
+  .annot-editor:disabled { background: var(--field-disabled); color: var(--muted); }
 
   /* Nav controls */
   .navrow { display: flex; align-items: center; gap: 8px; }
   .navbtn { width: 40px; height: 34px; font-size: 16px; line-height: 1; }
   .pos { font-size: 13px; color: var(--muted); margin-left: 6px; }
 
+  /* Vertical splitter between stage and panel */
+  .vsplit { flex: 0 0 auto; width: 8px; cursor: col-resize; background: var(--split); display: flex; align-items: center; justify-content: center; }
+  .vsplit span { width: 4px; height: 46px; border-radius: 2px; background: var(--grip); }
+  .vsplit:hover { background: var(--split-hover); }
+
   /* Side panel */
-  .panel { width: 290px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--panel); padding: 14px; overflow: auto; }
+  .panel { width: 290px; flex-shrink: 0; background: var(--panel); padding: 14px; overflow: auto; }
+  .panel-fold { display: flex; justify-content: flex-end; margin: -4px -4px 8px 0; }
   .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 0 0 8px; }
   .panel .section { margin-bottom: 20px; }
   .panel select { width: 100%; }
   .preset-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-  .preset-row .key { font-size: 11px; font-weight: 700; background: #eef2ff; color: #3730a3; border-radius: 4px; padding: 2px 6px; min-width: 20px; text-align: center; }
-  .preset-row input { flex: 1; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; }
+  .preset-row .key { font-size: 11px; font-weight: 700; background: var(--chip-bg); color: var(--chip-fg); border-radius: 4px; padding: 2px 6px; min-width: 20px; text-align: center; }
+  .preset-row input { flex: 1; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--field); color: var(--text); }
   .preset-row .rm { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 4px; }
   .preset-row .rm:hover { color: #dc2626; }
 
+  /* Floating "show panel" tab when folded */
+  .panel-show {
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    border: 1px solid var(--border); border-right: none; border-radius: 6px 0 0 6px;
+    background: var(--panel); color: var(--text); cursor: pointer; padding: 10px 4px; font-size: 13px;
+  }
+  .panel-show:hover { background: var(--btn-hover); }
+
   /* Status bar */
   .statusbar { border-top: 1px solid var(--border); background: var(--panel); padding: 6px 12px; font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; }
-  .statusbar kbd { font: inherit; font-size: 11px; background: #f3f4f6; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
+  .statusbar kbd { font: inherit; font-size: 11px; background: var(--kbd-bg); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
   .status-msg { color: var(--text); }
 </style>
 </head>
@@ -180,8 +207,9 @@
       </select>
     </div>
     <div class="group">
-      <label class="chk"><input type="checkbox" id="headerChk" checked> Header row</label>
+      <label class="chk"><input type="checkbox" id="headerChk" checked> Header</label>
       <label class="chk" title="Display only — never alters the data"><input type="checkbox" id="trimChk" checked> Trim view</label>
+      <label class="chk" title="Display only — inserts a line break after sentence ends (ignores decimals, e.g., Dr., U.S., etc.)"><input type="checkbox" id="sentChk"> Sentence breaks</label>
     </div>
     <div class="group">
       <span class="lbl">Font</span>
@@ -195,10 +223,15 @@
       <button class="btn primary" id="saveBtn" title="Save to file (Ctrl+S)">Save</button>
       <label class="chk" title="Prepend a UTF-8 BOM so Excel detects the encoding"><input type="checkbox" id="bomChk" checked> BOM</label>
     </div>
+    <span class="spacer"></span>
+    <div class="group">
+      <button class="btn icon" id="panelToggle" title="Hide panel">⟩</button>
+      <button class="btn icon" id="themeBtn" title="Toggle dark / light">☾</button>
+    </div>
   </div>
 
   <!-- Main -->
-  <div class="main">
+  <div class="main" id="main">
     <div class="stage" id="stage" tabindex="0">
       <div class="address">
         <span class="addr-cell" id="addrCell">—</span>
@@ -206,20 +239,23 @@
         <span class="addr-meta" id="addrMeta"></span>
       </div>
 
-      <!-- Source cell (read-only) -->
-      <div class="cell-wrap">
+      <div class="editzone" id="editzone">
+        <!-- Source cell (read-only) -->
         <div id="viewer" class="empty">Open a CSV file, or drag &amp; drop one here.</div>
-      </div>
 
-      <!-- Annotation (editable) -->
-      <div class="annot">
-        <div class="annot-head">
-          <span class="annot-label" id="annotLabel">Annotation</span>
-          <span class="annot-hint">labels &amp; free text go here — the source cell above is never modified</span>
+        <!-- Drag to resize the two boxes -->
+        <div class="hsplit" id="hsplit" title="Drag to resize"><span></span></div>
+
+        <!-- Annotation (editable) -->
+        <div class="annot">
+          <div class="annot-head">
+            <span class="annot-label" id="annotLabel">Annotation</span>
+            <span class="annot-hint">labels &amp; free text go here — the source cell above is never modified</span>
+          </div>
+          <div class="stampbar" id="stampbar"></div>
+          <textarea id="editor" class="annot-editor" spellcheck="false"
+                    placeholder="Select an annotation column on the right →" disabled></textarea>
         </div>
-        <div class="stampbar" id="stampbar"></div>
-        <textarea id="editor" class="annot-editor" spellcheck="false"
-                  placeholder="Select an annotation column on the right →" disabled></textarea>
       </div>
 
       <div class="navrow">
@@ -231,8 +267,12 @@
       </div>
     </div>
 
+    <!-- Vertical splitter -->
+    <div class="vsplit" id="vsplit" title="Drag to resize panel"><span></span></div>
+
     <!-- Labeling panel -->
-    <div class="panel">
+    <div class="panel" id="panel">
+      <div class="panel-fold"><button class="btn icon" id="foldBtn" title="Hide panel">⟩</button></div>
       <div class="section">
         <h2>Annotation column</h2>
         <select id="targetCol"><option value="">— none —</option></select>
@@ -250,6 +290,9 @@
         <label class="chk"><input type="checkbox" id="advanceChk" checked> Advance to next row after labeling</label>
       </div>
     </div>
+
+    <!-- Floating tab to reopen a folded panel -->
+    <button class="panel-show" id="panelShow" title="Show panel" hidden>⟨</button>
   </div>
 
   <!-- Status bar -->
@@ -278,26 +321,33 @@ const state = {
   nCols: 0,
   cur: { r: 0, c: 0 }, // currently viewed SOURCE cell
   mode: "nav",         // "nav" | "edit" (edit == annotation editor focused)
-  rawBuffer: null,     // ArrayBuffer of the loaded file (for re-decoding)
-  rawText: "",         // decoded text (for re-parsing on delimiter change)
+  rawBuffer: null,
+  rawText: "",
   fileName: "",
-  fileHandle: null,    // FileSystemFileHandle when available (in-place save)
+  fileHandle: null,
   dirty: false,
   _detected: "",
   // preferences (persisted)
   fontSize: 16,
   hasHeader: true,
   trim: true,
+  sentenceBreaks: false,
   encoding: "auto",
   delimiter: "auto",
   bom: true,
   autoAdvance: true,
   presets: ["Yes", "No", "?"],
+  theme: null,         // null = follow OS; "light" | "dark" = explicit
+  panelWidth: 290,
+  panelFolded: false,
+  srcRatio: 0.55,      // source box height as a fraction of the edit zone
 };
 
 let targetCol = null; // selected annotation column index, or null
 
 const PREFS_KEY = "csvcell.prefs";
+const PREF_KEYS = ["fontSize","hasHeader","trim","sentenceBreaks","encoding","delimiter",
+                   "bom","autoAdvance","presets","theme","panelWidth","panelFolded","srcRatio"];
 const DELIM_MAP = { comma: ",", tab: "\t", semicolon: ";", pipe: "|" };
 
 /* ---------------------------------------------------------------------------
@@ -307,13 +357,16 @@ const $ = (id) => document.getElementById(id);
 const els = {
   openBtn: $("openBtn"), fileInput: $("fileInput"), filename: $("filename"),
   encoding: $("encoding"), delimiter: $("delimiter"),
-  headerChk: $("headerChk"), trimChk: $("trimChk"),
+  headerChk: $("headerChk"), trimChk: $("trimChk"), sentChk: $("sentChk"),
   fontMinus: $("fontMinus"), fontPlus: $("fontPlus"), fontLabel: $("fontLabel"),
   copyBtn: $("copyBtn"), downloadBtn: $("downloadBtn"), saveBtn: $("saveBtn"), bomChk: $("bomChk"),
-  stage: $("stage"), addrCell: $("addrCell"), modeBadge: $("modeBadge"), addrMeta: $("addrMeta"),
-  viewer: $("viewer"), editor: $("editor"), stampbar: $("stampbar"), annotLabel: $("annotLabel"),
-  pos: $("pos"), targetCol: $("targetCol"), presetEditor: $("presetEditor"),
-  addPreset: $("addPreset"), advanceChk: $("advanceChk"), status: $("status"),
+  panelToggle: $("panelToggle"), themeBtn: $("themeBtn"),
+  main: $("main"), stage: $("stage"), addrCell: $("addrCell"), modeBadge: $("modeBadge"), addrMeta: $("addrMeta"),
+  editzone: $("editzone"), viewer: $("viewer"), hsplit: $("hsplit"),
+  editor: $("editor"), stampbar: $("stampbar"), annotLabel: $("annotLabel"),
+  pos: $("pos"), vsplit: $("vsplit"), panel: $("panel"), foldBtn: $("foldBtn"), panelShow: $("panelShow"),
+  targetCol: $("targetCol"), presetEditor: $("presetEditor"), addPreset: $("addPreset"),
+  advanceChk: $("advanceChk"), status: $("status"),
 };
 
 /* ---------------------------------------------------------------------------
@@ -322,16 +375,14 @@ const els = {
 function loadPrefs() {
   try {
     const p = JSON.parse(localStorage.getItem(PREFS_KEY) || "{}");
-    for (const k of ["fontSize","hasHeader","trim","encoding","delimiter","bom","autoAdvance","presets"]) {
-      if (p[k] !== undefined) state[k] = p[k];
-    }
+    for (const k of PREF_KEYS) if (p[k] !== undefined) state[k] = p[k];
     if (!Array.isArray(state.presets) || state.presets.length === 0) state.presets = ["Yes","No","?"];
     state.presets = state.presets.slice(0, 9);
-  } catch (_) { /* ignore corrupt prefs */ }
+  } catch (_) {}
 }
 function savePrefs() {
   const p = {};
-  for (const k of ["fontSize","hasHeader","trim","encoding","delimiter","bom","autoAdvance","presets"]) p[k] = state[k];
+  for (const k of PREF_KEYS) p[k] = state[k];
   try { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); } catch (_) {}
 }
 
@@ -345,7 +396,6 @@ function decodeBuffer(buf, enc) {
   }
   if (enc === "utf-8") return { text: new TextDecoder("utf-8").decode(buf), enc: "utf-8" };
   if (enc === "euc-kr") return { text: new TextDecoder("euc-kr").decode(buf), enc: "euc-kr" };
-  // auto: prefer strict UTF-8, fall back to CP949/EUC-KR
   try {
     return { text: new TextDecoder("utf-8", { fatal: true }).decode(buf), enc: "utf-8" };
   } catch (_) {
@@ -369,8 +419,7 @@ function resolvedDelimiter() {
   return state.delimiter === "auto" ? sniffDelimiter(state.rawText) : DELIM_MAP[state.delimiter];
 }
 
-// RFC 4180-ish parser: handles quoted fields, escaped quotes (""), and
-// newlines (LF/CRLF/CR) inside quotes; interior newlines normalised to \n.
+// RFC 4180-ish parser: quoted fields, escaped "", multi-line (LF/CRLF/CR) inside quotes.
 function parseCSV(text, delim) {
   const rows = [];
   let row = [], field = "", inQ = false, i = 0;
@@ -394,7 +443,6 @@ function parseCSV(text, delim) {
     field += ch; i++;
   }
   row.push(field); rows.push(row);
-  // drop a trailing empty record produced by a final newline
   const last = rows[rows.length - 1];
   if (rows.length > 1 && last.length === 1 && last[0] === "") rows.pop();
   return rows;
@@ -409,6 +457,27 @@ function toCSV(rows, delim) {
       return needsQuote(f) ? '"' + f.replace(/"/g, '""') + '"' : f;
     }).join(delim)
   ).join("\r\n");
+}
+
+// Display-only: insert a line break after sentence-ending punctuation, while
+// ignoring decimals, abbreviations, dotted acronyms, initials and bare numbers.
+const SENT_ABBR = new Set(["mr","mrs","ms","dr","prof","sr","jr","st","vs","etc","eg","ie","fig",
+  "no","vol","pp","p","al","inc","ltd","co","dept","univ","approx","cf","ca","rev","gen","sen","col","gov","pres"]);
+function sentenceWrap(text) {
+  return text.replace(
+    /([.?!…])(["'”’)\]]*)([ \t]+)(?=[A-Z0-9"'“‘(\[가-힣぀-ヿ㐀-鿿])/g,
+    (m, punct, close, ws, off, str) => {
+      if (punct === ".") {
+        const word = (str.slice(0, off).match(/\S+$/) || [""])[0];
+        const token = word.replace(/[.?!…"'”’)\]]+$/, "").toLowerCase();
+        if (SENT_ABBR.has(token)) return m;          // known abbreviation
+        if (/^[a-z]$/.test(token)) return m;         // single-letter initial
+        if (/^\d+$/.test(token)) return m;           // ordinal / list / year
+        if (/[a-z]\.[a-z]/i.test(word)) return m;    // dotted acronym (U.S., e.g.) — not decimals
+      }
+      return punct + close + "\n";
+    }
+  );
 }
 
 /* ---------------------------------------------------------------------------
@@ -435,6 +504,13 @@ function cellValue(r, c) {
   return row && row[c] != null ? row[c] : "";
 }
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(v, hi)); }
+
+// Source text after the display-only transforms (never mutates data).
+function viewerText(raw) {
+  let t = state.trim ? raw.trim() : raw;
+  if (state.sentenceBreaks) t = sentenceWrap(t);
+  return t;
+}
 
 /* ---------------------------------------------------------------------------
    Loading
@@ -488,22 +564,19 @@ function move(dr, dc) { setCell(state.cur.r + dr, state.cur.c + dc); }
 function canAnnotate() {
   return targetCol != null && state.rows.length > 0 && !(state.hasHeader && state.cur.r === 0);
 }
-
 function writeTarget(value) {
   const r = state.cur.r;
   while (state.rows[r].length <= targetCol) state.rows[r].push("");
   if (state.rows[r][targetCol] !== value) { state.rows[r][targetCol] = value; state.dirty = true; }
 }
-
 function focusAnnotation() {
   if (!canAnnotate()) { setStatus("Pick an annotation column first.", true); return; }
   state.mode = "edit";
-  render();                       // sets editor value (it isn't focused yet) + badge
+  render();
   els.editor.focus();
   const len = els.editor.value.length;
   els.editor.setSelectionRange(len, len);
 }
-
 function leaveAnnotation(advance) {
   if (state.mode !== "edit") return;
   state.mode = "nav";
@@ -511,17 +584,12 @@ function leaveAnnotation(advance) {
   if (advance && state.autoAdvance && state.cur.r < state.rows.length - 1) state.cur.r += 1;
   render();
 }
-
-// Live binding: typing in the annotation editor writes straight to the target cell.
 function onAnnotationInput() {
   if (!canAnnotate()) return;
   writeTarget(els.editor.value);
-  if (state.cur.c === targetCol) {            // viewing the same cell we're editing
-    els.viewer.textContent = state.trim ? els.editor.value.trim() : els.editor.value;
-  }
+  if (state.cur.c === targetCol) els.viewer.textContent = viewerText(els.editor.value);
   updateFilenameBadge();
 }
-
 function applyPreset(idx) {
   const label = state.presets[idx];
   if (label == null) return;
@@ -542,11 +610,9 @@ function render() {
   const editing = state.mode === "edit";
   const fs = state.fontSize + "px";
 
-  // mode badge
   els.modeBadge.textContent = editing ? "EDIT" : "NAV";
   els.modeBadge.className = "badge " + (editing ? "edit" : "nav");
 
-  // address (source cell)
   if (has) {
     const { r, c } = state.cur;
     els.addrCell.textContent = colLetter(c) + (r + 1);
@@ -559,18 +625,15 @@ function render() {
     els.addrCell.textContent = "—"; els.addrMeta.textContent = ""; els.pos.textContent = "";
   }
 
-  // source viewer (read-only, fidelity preserved; trim is display-only)
   els.viewer.style.fontSize = fs;
   if (has) {
     els.viewer.classList.remove("empty");
-    const raw = cellValue(state.cur.r, state.cur.c);
-    els.viewer.textContent = state.trim ? raw.trim() : raw;
+    els.viewer.textContent = viewerText(cellValue(state.cur.r, state.cur.c));
   } else {
     els.viewer.classList.add("empty");
     els.viewer.textContent = "Open a CSV file, or drag & drop one here.";
   }
 
-  // annotation editor (target column of current row)
   const allow = canAnnotate();
   els.editor.disabled = !allow;
   els.editor.style.fontSize = fs;
@@ -607,8 +670,7 @@ function renderStampbar() {
   els.stampbar.appendChild(hint);
   state.presets.forEach((label, i) => {
     const b = document.createElement("button");
-    b.className = "stamp";
-    b.disabled = !allow;
+    b.className = "stamp"; b.disabled = !allow;
     b.innerHTML = `<span class="key">${i + 1}</span>${escapeHtml(label || "(empty)")}`;
     b.title = `Insert "${label}" (key ${i + 1})`;
     b.addEventListener("click", () => { applyPreset(i); els.stage.focus(); });
@@ -652,23 +714,18 @@ function buildBytes() {
   const body = new TextEncoder().encode(text);
   if (!state.bom) return body;
   const out = new Uint8Array(body.length + 3);
-  out.set([0xEF, 0xBB, 0xBF], 0);
-  out.set(body, 3);
+  out.set([0xEF, 0xBB, 0xBF], 0); out.set(body, 3);
   return out;
 }
-
 function download() {
   const blob = new Blob([buildBytes()], { type: "text/csv" });
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = state.fileName || "export.csv";
+  a.href = URL.createObjectURL(blob); a.download = state.fileName || "export.csv";
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   setStatus("Downloaded a copy.");
 }
-
 async function save() {
-  // Prefer true in-place save when the File System Access API is available.
   if (window.showSaveFilePicker) {
     try {
       let handle = state.fileHandle;
@@ -681,30 +738,78 @@ async function save() {
           suggestedName: state.fileName || "export.csv",
           types: [{ description: "CSV", accept: { "text/csv": [".csv"] } }],
         });
-        state.fileHandle = handle;
-        state.fileName = handle.name || state.fileName;
+        state.fileHandle = handle; state.fileName = handle.name || state.fileName;
       }
       const w = await handle.createWritable();
-      await w.write(buildBytes());
-      await w.close();
-      state.dirty = false;
-      render();
-      setStatus(`Saved to ${state.fileName}.`);
+      await w.write(buildBytes()); await w.close();
+      state.dirty = false; render(); setStatus(`Saved to ${state.fileName}.`);
       return;
     } catch (err) {
       if (err && err.name === "AbortError") { setStatus("Save cancelled."); return; }
       setStatus("In-place save unavailable, downloading instead.", true);
     }
   }
-  download();
-  state.dirty = false;
-  render();
+  download(); state.dirty = false; render();
 }
-
 async function copyCell() {
   if (!state.rows.length) return;
   try { await navigator.clipboard.writeText(cellValue(state.cur.r, state.cur.c)); setStatus("Source cell copied."); }
   catch (_) { setStatus("Clipboard blocked by browser.", true); }
+}
+
+/* ---------------------------------------------------------------------------
+   Layout: theme, splitters, panel fold
+--------------------------------------------------------------------------- */
+function systemTheme() {
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+function applyTheme() {
+  const eff = state.theme || systemTheme();
+  document.documentElement.dataset.theme = eff;
+  els.themeBtn.textContent = eff === "dark" ? "☀" : "☾";
+  els.themeBtn.title = eff === "dark" ? "Switch to light" : "Switch to dark";
+}
+function applySrcHeight() {
+  const h = els.editzone.clientHeight;
+  if (h <= 0) return;
+  const min = 60, max = Math.max(min, h - 150);
+  els.viewer.style.height = clamp(state.srcRatio * h, min, max) + "px";
+}
+function applyPanel() {
+  if (state.panelFolded) {
+    els.panel.style.display = "none";
+    els.vsplit.style.display = "none";
+    els.panelShow.hidden = false;
+    els.panelToggle.textContent = "⟨"; els.panelToggle.title = "Show panel";
+  } else {
+    els.panel.style.display = "";
+    els.panel.style.width = state.panelWidth + "px";
+    els.vsplit.style.display = "";
+    els.panelShow.hidden = true;
+    els.panelToggle.textContent = "⟩"; els.panelToggle.title = "Hide panel";
+  }
+  applySrcHeight();
+}
+function togglePanel(force) {
+  state.panelFolded = force === undefined ? !state.panelFolded : force;
+  savePrefs(); applyPanel();
+}
+
+// Generic pointer-drag helper for the splitters.
+function makeDrag(handle, onMove) {
+  handle.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    const move = (ev) => onMove(ev);
+    const up = (ev) => {
+      handle.releasePointerCapture(e.pointerId);
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+      savePrefs();
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+  });
 }
 
 /* ---------------------------------------------------------------------------
@@ -719,8 +824,7 @@ function escapeHtml(s) {
 }
 function maybeReload(fn) {
   if (state.dirty && !confirm("Re-reading the file will discard unsaved edits. Continue?")) return false;
-  fn();
-  return true;
+  fn(); return true;
 }
 
 /* ---------------------------------------------------------------------------
@@ -736,7 +840,6 @@ els.openBtn.addEventListener("click", async () => {
       return;
     } catch (err) {
       if (err && err.name === "AbortError") return;
-      // fall through to classic input
     }
   }
   els.fileInput.click();
@@ -746,19 +849,16 @@ els.fileInput.addEventListener("change", (e) => {
   if (file) handleFile(file, null);
   e.target.value = "";
 });
-
-// Drag & drop
 document.addEventListener("dragover", (e) => { e.preventDefault(); document.body.classList.add("drag"); });
 document.addEventListener("dragleave", (e) => { if (e.target === document.documentElement) document.body.classList.remove("drag"); });
 document.addEventListener("drop", async (e) => {
-  e.preventDefault();
-  document.body.classList.remove("drag");
+  e.preventDefault(); document.body.classList.remove("drag");
   const item = e.dataTransfer.items && e.dataTransfer.items[0];
   if (item && item.getAsFileSystemHandle) {
     try {
       const handle = await item.getAsFileSystemHandle();
       if (handle && handle.kind === "file") { handleFile(await handle.getFile(), handle); return; }
-    } catch (_) { /* fall through */ }
+    } catch (_) {}
   }
   const file = e.dataTransfer.files && e.dataTransfer.files[0];
   if (file) handleFile(file, null);
@@ -775,11 +875,9 @@ els.delimiter.addEventListener("change", () => {
   state.delimiter = els.delimiter.value; savePrefs();
   if (state.rawText) maybeReload(() => reparse());
 });
-els.headerChk.addEventListener("change", () => {
-  state.hasHeader = els.headerChk.checked; savePrefs();
-  refreshColumns(); render();
-});
+els.headerChk.addEventListener("change", () => { state.hasHeader = els.headerChk.checked; savePrefs(); refreshColumns(); render(); });
 els.trimChk.addEventListener("change", () => { state.trim = els.trimChk.checked; savePrefs(); render(); });
+els.sentChk.addEventListener("change", () => { state.sentenceBreaks = els.sentChk.checked; savePrefs(); render(); });
 els.bomChk.addEventListener("change", () => { state.bom = els.bomChk.checked; savePrefs(); });
 
 function setFont(px) { state.fontSize = clamp(px, 8, 48); els.fontLabel.textContent = state.fontSize + "px"; savePrefs(); render(); }
@@ -789,8 +887,16 @@ els.fontPlus.addEventListener("click", () => setFont(state.fontSize + 2));
 els.copyBtn.addEventListener("click", copyCell);
 els.downloadBtn.addEventListener("click", download);
 els.saveBtn.addEventListener("click", save);
-
 els.advanceChk.addEventListener("change", () => { state.autoAdvance = els.advanceChk.checked; savePrefs(); });
+
+els.themeBtn.addEventListener("click", () => {
+  const eff = state.theme || systemTheme();
+  state.theme = eff === "dark" ? "light" : "dark";
+  savePrefs(); applyTheme();
+});
+els.panelToggle.addEventListener("click", () => togglePanel());
+els.foldBtn.addEventListener("click", () => togglePanel(true));
+els.panelShow.addEventListener("click", () => togglePanel(false));
 
 els.targetCol.addEventListener("change", () => {
   const v = els.targetCol.value;
@@ -801,9 +907,7 @@ els.targetCol.addEventListener("change", () => {
       while (r.length < idx) r.push("");
       r[idx] = (state.hasHeader && ri === 0) ? (name || "comment") : "";
     });
-    state.nCols = idx + 1;
-    targetCol = idx;
-    state.dirty = true;
+    state.nCols = idx + 1; targetCol = idx; state.dirty = true;
     refreshColumns(); render();
     setStatus(`Added annotation column "${state.hasHeader ? (name || "comment") : colLetter(idx)}".`);
   } else {
@@ -818,18 +922,34 @@ els.addPreset.addEventListener("click", () => {
   state.presets.push(""); savePrefs(); renderPresetEditor(); renderStampbar();
 });
 
-// Navigation buttons
 document.querySelectorAll("[data-nav]").forEach((btn) => {
   const map = { left: [0, -1], right: [0, 1], up: [-1, 0], down: [1, 0] };
   btn.addEventListener("click", () => { const d = map[btn.dataset.nav]; move(d[0], d[1]); els.stage.focus(); });
 });
 
-// Annotation editor: live-save, and exit edit mode on blur
+els.editor.addEventListener("focus", () => { if (!els.editor.disabled && state.mode !== "edit") { state.mode = "edit"; render(); } });
 els.editor.addEventListener("input", onAnnotationInput);
 els.editor.addEventListener("blur", () => { if (state.mode === "edit") { state.mode = "nav"; render(); } });
-
-// Keep keyboard nav alive when clicking the empty stage area
 els.stage.addEventListener("mousedown", (e) => { if (e.target === els.stage) els.stage.focus(); });
+
+/* ---------------------------------------------------------------------------
+   Events: splitters & responsive layout
+--------------------------------------------------------------------------- */
+makeDrag(els.hsplit, (e) => {
+  const top = els.editzone.getBoundingClientRect().top;
+  const h = els.editzone.clientHeight;
+  state.srcRatio = clamp((e.clientY - top) / h, 0.1, 0.9);
+  applySrcHeight();
+});
+makeDrag(els.vsplit, (e) => {
+  const right = els.main.getBoundingClientRect().right;
+  state.panelWidth = clamp(right - e.clientX, 180, 560);
+  els.panel.style.width = state.panelWidth + "px";
+});
+if (window.ResizeObserver) new ResizeObserver(applySrcHeight).observe(els.editzone);
+if (window.matchMedia) {
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!state.theme) applyTheme(); });
+}
 
 /* ---------------------------------------------------------------------------
    Keyboard (modal)
@@ -838,15 +958,12 @@ window.addEventListener("keydown", (e) => {
   const t = e.target;
   const mod = e.ctrlKey || e.metaKey;
 
-  // Edit mode: intercept only commit/cancel; let everything else type normally.
   if (state.mode === "edit" && t === els.editor) {
     if (e.key === "Escape") { e.preventDefault(); leaveAnnotation(false); }
     else if (e.key === "Enter" && mod) { e.preventDefault(); leaveAnnotation(true); }
     else if (e.key === "Tab") { e.preventDefault(); leaveAnnotation(false); move(0, e.shiftKey ? -1 : 1); }
     return;
   }
-
-  // Don't hijack typing in panel inputs / selects / buttons.
   if (["INPUT", "SELECT", "BUTTON", "TEXTAREA"].includes(t.tagName)) return;
 
   if (mod && (e.key === "s" || e.key === "S")) { e.preventDefault(); save(); return; }
@@ -869,24 +986,27 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
-window.addEventListener("beforeunload", (e) => {
-  if (state.dirty) { e.preventDefault(); e.returnValue = ""; }
-});
+window.addEventListener("beforeunload", (e) => { if (state.dirty) { e.preventDefault(); e.returnValue = ""; } });
 
 /* ---------------------------------------------------------------------------
    Init
 --------------------------------------------------------------------------- */
 function init() {
   loadPrefs();
+  applyTheme();
   els.encoding.value = state.encoding;
   els.delimiter.value = state.delimiter;
   els.headerChk.checked = state.hasHeader;
   els.trimChk.checked = state.trim;
+  els.sentChk.checked = state.sentenceBreaks;
   els.bomChk.checked = state.bom;
   els.advanceChk.checked = state.autoAdvance;
   els.fontLabel.textContent = state.fontSize + "px";
+  els.panel.style.width = state.panelWidth + "px";
   renderPresetEditor();
+  applyPanel();
   render();
+  requestAnimationFrame(applySrcHeight);
   els.stage.focus();
 }
 init();

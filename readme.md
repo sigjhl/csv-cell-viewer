@@ -27,6 +27,9 @@ It's a single `index.html` with **no build step and no dependencies**.
 - **Faithful parsing** — RFC 4180 quoting, escaped `""`, multi-line cells, CRLF.
   The source cell is shown **exactly** as stored.
 - **Trim view** — optional whitespace trim for readability (display-only; never alters data).
+- **Sentence breaks** — optional display-only toggle that inserts a line break after each
+  sentence, while skipping decimals (`3.14`), abbreviations (`Dr.`, `e.g.`), acronyms
+  (`U.S.`) and bare numbers/years.
 - **Font size** control for dense text.
 - **Annotation / labeling** — choose (or add) an annotation column, then:
   - stamp **preset labels** with number keys `1`–`9` (presets are editable), or
@@ -35,7 +38,9 @@ It's a single `index.html` with **no build step and no dependencies**.
 - **Auto-advance** to the next row after labeling (toggle).
 - **Save** — Download a copy, or save **in place** (Chrome/Edge, via the File System
   Access API). Optional UTF-8 BOM so Excel detects the encoding.
-- **Preferences** (presets, font, toggles) persist locally between sessions.
+- **Layout** — light / dark theme; drag the divider to resize the source vs. annotation
+  boxes; drag the side-panel edge to resize it, or fold it away once configured.
+- **Preferences** (presets, font, layout, toggles) persist locally between sessions.
 
 ## Keyboard
 
