@@ -1,53 +1,63 @@
-# CSV Viewer Electron App
+# CSV Cell Viewer
 
-This is an Electron application for viewing CSV files, built with React and Tailwind CSS.
+A tiny, single-file tool for **reading and annotating text-heavy CSVs** — the kind
+with long, multi-line cells and Korean/CJK text that make spreadsheet apps crawl.
 
-## Prerequisites
+It shows **one cell at a time** in a large pane, so it stays instant no matter how
+big or dense the file is. Everything runs locally in your browser; nothing is uploaded.
 
-- Node.js (v14 or later recommended)
-- npm (comes with Node.js)
+## Why
 
-## Setup
+Spreadsheet grids lay out thousands of cells at once. With long multi-line or
+Korean text, that layout work is what makes them unresponsive. This viewer renders
+exactly **one** cell, so rendering cost stays constant regardless of file size.
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/sigjhl/csv-cell-viewer/
-   cd csv-viewer-viewer
-   ```
+## Use
 
-2. Install dependencies:
-   ```
-   npm install
-   ```
+It's a single `index.html` with **no build step and no dependencies**.
 
-## Development
+- **Double-click `index.html`** to open it in your browser, then **Open a CSV**
+  (or drag a file onto the window).
 
-To run the app in development mode:
+## Features
 
-```
-npm run dev
-```
+- **One-cell viewer** — read a single cell's full content in a big pane.
+- **Encoding** — Auto / UTF-8 / **EUC-KR (CP949)** for Korean files exported from Excel.
+- **Delimiter** — auto-detect, or pick comma / tab / semicolon / pipe.
+- **Faithful parsing** — RFC 4180 quoting, escaped `""`, multi-line cells, CRLF.
+  The source cell is shown **exactly** as stored.
+- **Trim view** — optional whitespace trim for readability (display-only; never alters data).
+- **Font size** control for dense text.
+- **Annotation / labeling** — choose (or add) an annotation column, then:
+  - stamp **preset labels** with number keys `1`–`9` (presets are editable), or
+  - type a **free-text comment**.
+  Both are written to the annotation column. **Source columns stay immutable.**
+- **Auto-advance** to the next row after labeling (toggle).
+- **Save** — Download a copy, or save **in place** (Chrome/Edge, via the File System
+  Access API). Optional UTF-8 BOM so Excel detects the encoding.
+- **Preferences** (presets, font, toggles) persist locally between sessions.
 
-## Building
+## Keyboard
 
-To build the app for production:
+| Keys | Action |
+|------|--------|
+| `←` `↑` `↓` `→` | Move between cells |
+| `Home` / `End` | First / last column (`Ctrl` for first/last row) |
+| `PageUp` / `PageDown` | Jump 10 rows |
+| `1`–`9` | Insert the matching preset label into the annotation column |
+| `Enter` | Edit a free-text comment for the current row |
+| `Ctrl+Enter` | Commit the comment and advance to the next row |
+| `Esc` | Commit the comment and return to navigation |
+| `Ctrl+S` | Save |
+| `Ctrl+C` | Copy the source cell |
 
-```
-npm run build
-```
+## Notes
 
-## Packaging
-
-To package the app for your current platform:
-
-```
-npm run make
-```
-
-## Cross-platform building
-
-For building on different platforms, you may need to use a CI/CD service or set up virtual machines for each target OS.
+- **In-place save** uses the File System Access API (Chromium browsers); elsewhere
+  it falls back to a download.
+- **Your data stays local** — the file is read in the browser and never uploaded.
+- Source columns are never modified; only the annotation column you select is written to.
 
 ## License
 
-This project is licensed under the MIT License.
+MIT — see [LICENSE](LICENSE).
