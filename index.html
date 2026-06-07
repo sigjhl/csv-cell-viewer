@@ -180,6 +180,22 @@
   .statusbar { border-top: 1px solid var(--border); background: var(--panel); padding: 6px 12px; font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; }
   .statusbar kbd { font: inherit; font-size: 11px; background: var(--kbd-bg); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; }
   .status-msg { color: var(--text); }
+
+  /* Key-cast HUD — brief confirmation of the label/comment that just landed */
+  .keycast { position: fixed; left: 16px; bottom: 40px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; pointer-events: none; z-index: 50; }
+  .kc-chip {
+    display: inline-flex; align-items: center; gap: 9px; max-width: 60vw;
+    padding: 8px 12px; border-radius: 10px;
+    background: rgba(20,22,30,0.92); color: #f4f5f7;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    font-size: 15px; font-weight: 600; white-space: nowrap;
+    opacity: 0; transform: translateY(10px) scale(0.97);
+    transition: opacity 0.14s ease, transform 0.14s ease;
+  }
+  .kc-chip.show { opacity: 1; transform: translateY(0) scale(1); }
+  .kc-chip .cap { font-size: 12px; font-weight: 800; background: var(--accent); color: var(--accent-fg); border-radius: 6px; padding: 2px 8px; min-width: 18px; text-align: center; }
+  .kc-chip .txt { overflow: hidden; text-overflow: ellipsis; }
+  .kc-chip .meta { font-size: 12px; font-weight: 500; color: rgba(244,245,247,0.6); }
 </style>
 </head>
 <body>
@@ -286,7 +302,8 @@
 
       <div class="section">
         <h2>Behaviour</h2>
-        <label class="chk"><input type="checkbox" id="advanceChk" checked> Advance to next row after labeling</label>
+        <label class="chk" style="display:flex"><input type="checkbox" id="advanceChk" checked> Advance to next row after labeling</label>
+        <label class="chk" style="display:flex; margin-top:6px"><input type="checkbox" id="flashChk" checked> Show key flashes</label>
       </div>
     </div>
 
@@ -306,6 +323,8 @@
       <kbd>Ctrl+S</kbd> save
     </span>
   </div>
+
+  <div class="keycast" id="keycast" aria-live="polite"></div>
 
   <input type="file" id="fileInput" accept=".csv,text/csv,text/plain" style="display:none">
 
@@ -335,6 +354,7 @@ const state = {
   delimiter: "auto",
   bom: true,
   autoAdvance: true,
+  keyFlash: true,
   presets: ["Yes", "No", "?"],
   theme: null,         // null = follow OS; "light" | "dark" = explicit
   panelWidth: 290,
@@ -346,7 +366,7 @@ let targetCol = null; // selected annotation column index, or null
 
 const PREFS_KEY = "csvcell.prefs";
 const PREF_KEYS = ["fontSize","hasHeader","trim","sentenceBreaks","encoding","delimiter",
-                   "bom","autoAdvance","presets","theme","panelWidth","panelFolded","srcRatio"];
+                   "bom","autoAdvance","keyFlash","presets","theme","panelWidth","panelFolded","srcRatio"];
 const DELIM_MAP = { comma: ",", tab: "\t", semicolon: ";", pipe: "|" };
 
 /* ---------------------------------------------------------------------------
@@ -365,7 +385,7 @@ const els = {
   editor: $("editor"), stampbar: $("stampbar"), annotLabel: $("annotLabel"),
   pos: $("pos"), vsplit: $("vsplit"), panel: $("panel"), foldBtn: $("foldBtn"), panelShow: $("panelShow"),
   targetCol: $("targetCol"), presetEditor: $("presetEditor"), addPreset: $("addPreset"),
-  advanceChk: $("advanceChk"), status: $("status"),
+  advanceChk: $("advanceChk"), flashChk: $("flashChk"), status: $("status"), keycast: $("keycast"),
 };
 
 /* ---------------------------------------------------------------------------
@@ -589,9 +609,15 @@ function focusAnnotation() {
 }
 function leaveAnnotation(advance) {
   if (state.mode !== "edit") return;
+  const fromR = state.cur.r;
   state.mode = "nav";
   els.stage.focus();
-  if (advance && state.autoAdvance && state.cur.r < state.rows.length - 1) state.cur.r += 1;
+  const moved = advance && state.autoAdvance && fromR < state.rows.length - 1;
+  if (moved) {
+    const val = cellValue(fromR, targetCol);
+    if (val.trim()) flashCast("✎", clip(val), `${colName(targetCol)} · row ${state.hasHeader ? fromR : fromR + 1}`);
+    state.cur.r = fromR + 1;
+  }
   render();
 }
 function onAnnotationInput() {
@@ -606,9 +632,11 @@ function applyPreset(idx) {
   if (!state.rows.length) return;
   if (targetCol == null) { setStatus("Pick an annotation column first.", true); return; }
   if (state.hasHeader && state.cur.r === 0) { setStatus("On the header row — move down first.", true); return; }
+  const r = state.cur.r;
   writeTarget(label);
   setStatus(`Set ${colName(targetCol)} = "${label}"`);
-  if (state.autoAdvance && state.cur.r < state.rows.length - 1) state.cur.r += 1;
+  flashCast(String(idx + 1), clip(label) || "(empty)", `${colName(targetCol)} · row ${state.hasHeader ? r : r + 1}`);
+  if (state.autoAdvance && r < state.rows.length - 1) state.cur.r = r + 1;
   render();
 }
 
@@ -830,6 +858,21 @@ function setStatus(msg, warn) {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
+function clip(s) { s = String(s).replace(/\s+/g, " ").trim(); return s.length > 28 ? s.slice(0, 27) + "…" : s; }
+
+// KeyCastr-style transient chip confirming what just landed (and where).
+function flashCast(cap, text, meta) {
+  if (!state.keyFlash) return;
+  const chip = document.createElement("div");
+  chip.className = "kc-chip";
+  chip.innerHTML = (cap ? `<span class="cap">${escapeHtml(cap)}</span>` : "") +
+    `<span class="txt">${escapeHtml(text)}</span>` +
+    (meta ? `<span class="meta">${escapeHtml(meta)}</span>` : "");
+  els.keycast.appendChild(chip);
+  while (els.keycast.children.length > 5) els.keycast.removeChild(els.keycast.firstChild);
+  requestAnimationFrame(() => chip.classList.add("show"));
+  setTimeout(() => { chip.classList.remove("show"); setTimeout(() => chip.remove(), 200); }, 750);
+}
 function maybeReload(fn) {
   if (state.dirty && !confirm("Re-reading the file will discard unsaved edits. Continue?")) return false;
   fn(); return true;
@@ -896,6 +939,7 @@ els.copyBtn.addEventListener("click", copyCell);
 els.downloadBtn.addEventListener("click", download);
 els.saveBtn.addEventListener("click", save);
 els.advanceChk.addEventListener("change", () => { state.autoAdvance = els.advanceChk.checked; savePrefs(); });
+els.flashChk.addEventListener("change", () => { state.keyFlash = els.flashChk.checked; savePrefs(); });
 
 els.themeBtn.addEventListener("click", () => {
   const eff = state.theme || systemTheme();
@@ -1008,6 +1052,7 @@ function init() {
   els.sentChk.checked = state.sentenceBreaks;
   els.bomChk.checked = state.bom;
   els.advanceChk.checked = state.autoAdvance;
+  els.flashChk.checked = state.keyFlash;
   els.fontLabel.textContent = state.fontSize + "px";
   els.panel.style.width = state.panelWidth + "px";
   renderPresetEditor();

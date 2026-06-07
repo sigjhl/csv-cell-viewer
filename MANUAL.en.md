@@ -139,6 +139,11 @@ newline.** Commit with:
 
 Comments are saved as you type.
 
+**Confirmation flashes.** Because auto-advance moves on immediately, a brief chip appears in the
+lower-left after each label or committed comment — showing the key (or ✎), the value, and the
+column · row it landed on — so you can confirm it registered without slowing down. Turn it off
+with **Show key flashes** in the side panel.
+
 **Immutability.** Only the chosen annotation column is ever written. Every other column —
 including the long multi-line cell you're reading — is guaranteed unchanged. (If you pick an
 *existing* column as the target, you are of course writing into it; choose **Add new column** to
@@ -179,8 +184,8 @@ delimiter matches the one used to read the file.
 ## 11. Preferences & privacy
 
 These settings persist in your browser's `localStorage` (per browser / profile): font size,
-Header / Trim / Sentence toggles, encoding, delimiter, BOM, auto-advance, your label presets,
-theme, panel width, fold state, and the pane split ratio. They are **not** tied to any file.
+Header / Trim / Sentence toggles, encoding, delimiter, BOM, auto-advance, key flashes, your label
+presets, theme, panel width, fold state, and the pane split ratio. They are **not** tied to any file.
 
 **Privacy.** The app makes no network requests. Your CSV is read locally and never leaves your
 machine.

@@ -20,7 +20,7 @@ instant on files of any size, and runs entirely in your browser — nothing is u
 - **Faithful parsing** — RFC 4180 quotes, escaped `""`, multi-line cells, CRLF; the source is shown exactly.
 - **Readability** — *Trim view* (drop blank lines), *Sentence breaks*, and font size — all display-only.
 - **Annotation / labeling** — pick or add an annotation column; quick labels (`1`–`9`) or free-text
-  comments; auto-advance. **Source columns stay immutable.**
+  comments; auto-advance with a brief on-screen flash confirming each entry. **Source columns stay immutable.**
 - **Save** — download a copy, or save **in place** (Chrome / Edge); optional UTF-8 BOM for Excel.
 - **Comfortable UI** — light / dark theme, resizable panes, foldable side panel; preferences persist locally.
 
@@ -69,7 +69,7 @@ MIT — see [LICENSE](LICENSE).
 - **가독성 옵션** — *공백 정리(Trim view)*, *문장 줄바꿈(Sentence breaks)*, 글자 크기 — 모두 표시
   전용(데이터 불변).
 - **주석/라벨링** — 주석 열을 선택하거나 추가; 빠른 라벨(`1`–`9`) 또는 자유 텍스트 코멘트; 자동
-  다음 행 이동. **원본 열은 변경되지 않습니다.**
+  다음 행 이동 시 입력 내용을 짧게 확인 표시. **원본 열은 변경되지 않습니다.**
 - **저장** — 사본 다운로드 또는 **원본 파일에 바로 저장**(Chrome / Edge); 엑셀용 UTF-8 BOM 옵션.
 - **편안한 UI** — 라이트/다크 테마, 크기 조절 창, 접을 수 있는 사이드 패널; 설정은 로컬에 저장.
 
